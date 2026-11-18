@@ -1,0 +1,587 @@
+<template>
+  <transition name="modal">
+    <div
+      class="settings-panel"
+      :class="{ 'disable-hover': showColorPicker }"
+      v-if="visible"
+    >
+      <div
+        class="settings-overlay"
+        @click="$emit('close')"
+        v-show="!showColorPicker"
+      ></div>
+      <div class="settings-content">
+        <!-- 设置面板头部 -->
+        <SettingsHeader @close="$emit('close')" />
+
+        <div class="settings-body">
+          <!-- 侧边导航栏 -->
+          <div class="settings-navigation">
+            <div class="nav-title">{{ $t('settings.nav.quick') }}</div>
+            <nav class="nav-menu">
+              <a
+                v-for="section in navigationSections"
+                :key="section.id"
+                class="nav-item"
+                :class="{ active: activeSection === section.id }"
+                @click="scrollToSection(section.id)"
+              >
+                <div class="nav-icon">
+                  <svg :viewBox="section.icon.viewBox" width="18" height="18">
+                    <path :d="section.icon.path" fill="currentColor" />
+                  </svg>
+                </div>
+                <span class="nav-label">{{ $t(section.labelKey) }}</span>
+              </a>
+            </nav>
+          </div>
+
+          <!-- 设置内容区域 -->
+          <div class="settings-content-area">
+            <div class="settings-sections">
+              <!-- 通用设置 -->
+              <section id="general" class="settings-section-wrapper">
+                <GeneralSettingsSection
+                  :enable-default-content="enableDefaultContent"
+                  :default-open-mode="defaultOpenMode"
+                  :open-modes="OPEN_MODES"
+                  @toggle-default-content="toggleDefaultContent"
+                  @select-default-open-mode="handleSelectOpenMode"
+                />
+              </section>
+
+              <!-- 主题系统设置 -->
+              <section id="theme-system" class="settings-section-wrapper">
+                <ThemeSystemSection
+                  :layout-list="layoutList"
+                  :selected-theme-system-id="selectedThemeSystemId"
+                  @select="selectThemeSystem"
+                />
+              </section>
+
+              <!-- 主题色设置 -->
+              <section id="color-theme" class="settings-section-wrapper">
+                <ColorThemeSection
+                  :builtin-color-themes="builtinColorThemes"
+                  :selected-theme-id="selectedThemeId"
+                  :is-custom-color-active="isCustomColorActive"
+                  :current-custom-color="currentCustomColor"
+                  @select-theme="selectTheme"
+                  @toggle-color-picker="toggleColorPicker"
+                />
+              </section>
+
+              <!-- 代码样式设置 -->
+              <section id="code-style" class="settings-section-wrapper">
+                <CodeStyleSection
+                  :code-style-list="codeStyleList"
+                  :selected-code-style-id="selectedCodeStyleId"
+                  @select="selectCodeStyle"
+                />
+              </section>
+
+              <!-- 字体设置 -->
+              <section id="font-settings" class="settings-section-wrapper">
+                <FontSettingsSection
+                  :font-family-list="fontFamilyList"
+                  :selected-font-family="selectedFontFamily"
+                  @select-font-family="selectFontFamily"
+                />
+              </section>
+
+              <!-- 字号设置 -->
+              <section id="font-size-settings" class="settings-section-wrapper">
+                <FontSizeSection
+                  :selected-font-family="selectedFontFamily"
+                  :selected-font-size="selectedFontSize"
+                  @update-font-size="updateFontSize"
+                />
+              </section>
+
+              <!-- 间距设置 -->
+              <section id="spacing-settings" class="settings-section-wrapper">
+                <SpacingSettingsSection
+                  :letter-spacing="selectedLetterSpacing"
+                  :line-height="selectedLineHeight"
+                  @update-letter-spacing="updateLetterSpacing"
+                  @update-line-height="updateLineHeight"
+                />
+              </section>
+
+              <!-- 自动更新 -->
+              <section id="updates" class="settings-section-wrapper">
+                <UpdateSection />
+              </section>
+            </div>
+          </div>
+        </div>
+
+        <!-- 设置面板底部 -->
+        <SettingsFooter
+          @apply="applySettings"
+        />
+      </div>
+
+      <!-- 颜色选择器弹窗 -->
+      <div
+        v-if="showColorPicker"
+        class="color-picker-overlay"
+        @click="closeColorPicker"
+      >
+        <div class="color-picker-modal" @click.stop>
+          <ColorPicker
+            :initial-color="currentCustomColor"
+            @change="onColorChange"
+            @confirm="onColorConfirm"
+            @cancel="closeColorPicker"
+          />
+        </div>
+      </div>
+    </div>
+  </transition>
+</template>
+
+<script setup>
+import { ref, watch, nextTick, onMounted, onUnmounted } from "vue";
+import { useSettingsPanel } from "../composables/useSettingsPanel.js";
+import SettingsHeader from "./settings/SettingsHeader.vue";
+import SettingsFooter from "./settings/SettingsFooter.vue";
+import ThemeSystemSection from "./settings/ThemeSystemSection.vue";
+import ColorThemeSection from "./settings/ColorThemeSection.vue";
+import CodeStyleSection from "./settings/CodeStyleSection.vue";
+import FontSettingsSection from "./settings/FontSettingsSection.vue";
+import FontSizeSection from "./settings/FontSizeSection.vue";
+import SpacingSettingsSection from "./settings/SpacingSettingsSection.vue";
+import GeneralSettingsSection from "./settings/GeneralSettingsSection.vue";
+import UpdateSection from "./settings/UpdateSection.vue";
+import ColorPicker from "./ColorPicker.vue";
+
+// Props
+const props = defineProps({
+  visible: {
+    type: Boolean,
+    default: false,
+  },
+});
+
+// Emits
+const emit = defineEmits(["close", "show-notification"]);
+
+// 使用设置面板 composable
+const {
+  // 状态
+  selectedThemeSystemId,
+  selectedThemeId,
+  selectedCodeStyleId,
+  selectedFontFamily,
+  selectedFontSize,
+  selectedLetterSpacing,
+  selectedLineHeight,
+  showColorPicker,
+  selectedCustomColor,
+  currentCustomColor,
+  isUsingCustomColor,
+  currentCustomTheme,
+  enableDefaultContent,
+  defaultOpenMode,
+  OPEN_MODES,
+
+  // 计算属性
+  builtinColorThemes,
+  isCustomColorActive,
+  layoutList,
+  codeStyleList,
+  fontFamilyList,
+  currentColorTheme,
+
+  // 方法
+  selectThemeSystem,
+  selectTheme,
+  selectCodeStyle,
+  selectFontFamily,
+  updateFontSize,
+  updateLetterSpacing,
+  updateLineHeight,
+  adjustColorBrightness,
+  toggleColorPicker,
+  closeColorPicker,
+  onColorChange,
+  onColorConfirm,
+  resetSelections,
+  applySettings,
+  toggleDefaultContent,
+  setDefaultOpenMode,
+} = useSettingsPanel(props, emit);
+
+// 导航相关状态
+const activeSection = ref("general");
+
+// 导航配置
+const navigationSections = ref([
+  {
+    id: "general",
+    labelKey: 'settings.nav.general',
+    icon: {
+      viewBox: "0 0 24 24",
+      path: "M19.14,12.94C19.18,12.64 19.2,12.33 19.2,12C19.2,11.68 19.18,11.36 19.13,11.06L21.16,9.48C21.34,9.34 21.39,9.07 21.28,8.87L19.36,5.55C19.24,5.33 18.99,5.26 18.77,5.33L16.38,6.29C15.88,5.91 15.32,5.59 14.71,5.35L14.5,2.81C14.47,2.58 14.27,2.4 14.04,2.4H10.02C9.78,2.4 9.59,2.57 9.56,2.81L9.36,5.35C8.75,5.59 8.19,5.91 7.69,6.29L5.3,5.33C5.08,5.26 4.83,5.33 4.71,5.55L2.79,8.87C2.68,9.07 2.73,9.34 2.91,9.48L4.94,11.06C4.89,11.36 4.87,11.67 4.87,12C4.87,12.33 4.89,12.64 4.94,12.94L2.91,14.52C2.73,14.66 2.68,14.93 2.79,15.13L4.71,18.45C4.83,18.67 5.08,18.74 5.3,18.67L7.69,17.71C8.19,18.09 8.75,18.41 9.36,18.65L9.56,21.19C9.59,21.42 9.78,21.6 10.02,21.6H14.04C14.27,21.6 14.47,21.42 14.5,21.19L14.71,18.65C15.32,18.41 15.88,18.09 16.38,17.71L18.77,18.67C18.99,18.74 19.24,18.67 19.36,18.45L21.28,15.13C21.39,14.93 21.34,14.66 21.16,14.52L19.13,12.94M12,15.6A3.6,3.6 0 1,1 12,8.4A3.6,3.6 0 0,1 12,15.6M12,10.2A1.8,1.8 0 1,0 12,13.8A1.8,1.8 0 0,0 12,10.2Z",
+    },
+  },
+  {
+    id: "theme-system",
+    labelKey: 'settings.nav.themeSystem',
+    icon: {
+      viewBox: "0 0 24 24",
+      path: "M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8Z",
+    },
+  },
+  {
+    id: "color-theme",
+    labelKey: 'settings.nav.colorTheme',
+    icon: {
+      viewBox: "0 0 24 24",
+      path: "M17.5,12A1.5,1.5 0 0,1 16,10.5A1.5,1.5 0 0,1 17.5,9A1.5,1.5 0 0,1 19,10.5A1.5,1.5 0 0,1 17.5,12M14.5,8A1.5,1.5 0 0,1 13,6.5A1.5,1.5 0 0,1 14.5,5A1.5,1.5 0 0,1 16,6.5A1.5,1.5 0 0,1 14.5,8M9.5,8A1.5,1.5 0 0,1 8,6.5A1.5,1.5 0 0,1 9.5,5A1.5,1.5 0 0,1 11,6.5A1.5,1.5 0 0,1 9.5,8M6.5,12A1.5,1.5 0 0,1 5,10.5A1.5,1.5 0 0,1 6.5,9A1.5,1.5 0 0,1 8,10.5A1.5,1.5 0 0,1 6.5,12M12,3A9,9 0 0,0 3,12A9,9 0 0,0 12,21A1.5,1.5 0 0,0 13.5,19.5C13.5,19.11 13.35,18.76 13.11,18.5C12.88,18.23 12.73,17.88 12.73,17.5A1.5,1.5 0 0,1 14.23,16H16A5,5 0 0,0 21,11C21,6.58 16.97,3 12,3Z",
+    },
+  },
+  {
+    id: "code-style",
+    labelKey: 'settings.nav.codeStyle',
+    icon: {
+      viewBox: "0 0 24 24",
+      path: "M14.6,16.6L19.2,12L14.6,7.4L16,6L22,12L16,18L14.6,16.6M9.4,16.6L4.8,12L9.4,7.4L8,6L2,12L8,18L9.4,16.6Z",
+    },
+  },
+  {
+    id: "font-settings",
+    labelKey: 'settings.nav.font',
+    icon: {
+      viewBox: "0 0 24 24",
+      path: "M9,4V7H14V19H17V7H22V4H9M3,4V7H6V19H9V7H12V4H3Z",
+    },
+  },
+  {
+    id: "font-size-settings",
+    labelKey: 'settings.nav.fontSize',
+    icon: {
+      viewBox: "0 0 24 24",
+      path: "M11,7A2,2 0 0,1 13,9V17A2,2 0 0,1 11,19H9A2,2 0 0,1 7,17V9A2,2 0 0,1 9,7H11M9,9V17H11V9H9M12,2A2,2 0 0,1 14,4V6H12V4H10V6H8V4A2,2 0 0,1 10,2H12Z",
+    },
+  },
+  {
+    id: "spacing-settings",
+    labelKey: 'settings.nav.spacing',
+    icon: {
+      viewBox: "0 0 24 24",
+      path: "M3 11h18v2H3v-2m6-6h6v2H9V5m0 14h6v2H9v-2",
+    },
+  },
+  {
+    id: "updates",
+    labelKey: 'settings.nav.updates',
+    icon: {
+      viewBox: "0 0 24 24",
+      path: "M21,10.12H14.22L16.96,7.3C14.23,4.6 9.81,4.5 7.08,7.2C4.35,9.91 4.35,14.28 7.08,17C9.81,19.7 14.23,19.7 16.96,17C18.32,15.65 19,14.08 19,12.1H21C21,14.08 20.12,16.65 18.36,18.39C14.85,21.87 9.15,21.87 5.64,18.39C2.14,14.92 2.11,9.28 5.62,5.81C9.13,2.34 14.76,2.34 18.27,5.81L21,3V10.12M12.5,8V12.25L16,14.33L15.28,15.54L11,13V8H12.5Z",
+    },
+  },
+]);
+
+// 滚动到指定区域
+const scrollToSection = (sectionId) => {
+  const element = document.getElementById(sectionId);
+  if (element) {
+    element.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+      inline: "nearest",
+    });
+    activeSection.value = sectionId;
+  }
+};
+
+// 选择默认打开方式（立即生效并持久化）
+function handleSelectOpenMode(mode) {
+  setDefaultOpenMode(mode);
+}
+
+// 监听滚动事件，更新当前激活的导航项
+const handleScroll = () => {
+  const sections = navigationSections.value.map((section) => section.id);
+  const scrollContainer = document.querySelector(".settings-content-area");
+
+  if (!scrollContainer) return;
+
+  const containerHeight = scrollContainer.clientHeight;
+
+  for (const sectionId of sections) {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      const rect = element.getBoundingClientRect();
+      const containerRect = scrollContainer.getBoundingClientRect();
+      const relativeTop = rect.top - containerRect.top;
+
+      // 如果元素在视口的上半部分，则认为是当前激活的区域
+      if (
+        relativeTop <= containerHeight / 3 &&
+        relativeTop >= -rect.height / 2
+      ) {
+        activeSection.value = sectionId;
+        break;
+      }
+    }
+  }
+};
+
+// 直接定位到当前激活区域（复用导航点击的精确定位逻辑）
+const jumpToActiveSection = () => {
+  const element = document.getElementById(activeSection.value);
+  if (element) {
+    // 使用与导航点击相同的 scrollIntoView 方法，但不使用平滑滚动
+    element.scrollIntoView({
+      behavior: "auto", // 使用 'auto' 而不是 'smooth'，实现瞬间定位
+      block: "start", // 与导航点击保持一致的定位方式
+      inline: "nearest", // 与导航点击保持一致的定位方式
+    });
+  }
+};
+
+// 监听面板可见性变化，立即设置滚动位置
+watch(
+  () => props.visible,
+  (newVisible, oldVisible) => {
+    if (newVisible && !oldVisible) {
+      // 面板从隐藏变为显示时，立即设置滚动位置
+      // 使用 nextTick 确保DOM已渲染完成
+      nextTick(() => {
+        jumpToActiveSection();
+      });
+    }
+  },
+  { flush: "post" }
+); // 使用 post 确保在DOM更新后执行
+
+// 生命周期钩子
+onMounted(() => {
+  const scrollContainer = document.querySelector(".settings-content-area");
+  if (scrollContainer) {
+    scrollContainer.addEventListener("scroll", handleScroll);
+  }
+});
+
+onUnmounted(() => {
+  const scrollContainer = document.querySelector(".settings-content-area");
+  if (scrollContainer) {
+    scrollContainer.removeEventListener("scroll", handleScroll);
+  }
+});
+
+// 暴露方法给父组件
+defineExpose({
+  resetSelections,
+});
+</script>
+
+<style scoped>
+@import "../styles/components/settings/index.css";
+
+/* ============================================================
+   设置面板主体布局：左右分栏
+   左侧导航栏固定不动，右侧内容区独立滚动。
+   关键：导航栏与内容区是两个平级 flex 子项，各自独立处理 overflow，
+   避免父级滚动导致导航栏跟随内容一起滑动。
+   ============================================================ */
+.settings-body {
+  display: flex;
+  gap: 0;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* 侧边导航栏：占满面板高度，自身不滚动 */
+.settings-navigation {
+  flex-shrink: 0;
+  width: 208px;
+  display: flex;
+  flex-direction: column;
+  background: var(--theme-bg-secondary);
+  border-right: 1px solid var(--theme-border-light);
+  padding: 20px 14px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.nav-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--theme-text-tertiary);
+  margin-bottom: 14px;
+  padding: 0 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.nav-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  color: var(--theme-text-secondary);
+  text-decoration: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  cursor: pointer;
+  font-size: 13px;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+}
+
+.nav-item:hover {
+  background: var(--theme-bg-tertiary);
+  color: var(--theme-text-primary);
+}
+
+/* 选中态：使用浅色底 + 主题色文字，比实心块更克制 */
+.nav-item.active {
+  background: var(--theme-primary-15);
+  color: var(--theme-primary);
+  font-weight: 500;
+}
+
+.nav-item.active .nav-icon {
+  color: var(--theme-primary);
+}
+
+.nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--theme-text-tertiary);
+  transition: color 0.15s ease;
+}
+
+.nav-label {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 内容区：独立滚动，与导航栏形成固定的左右分栏 */
+.settings-content-area {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 28px 32px 40px;
+}
+
+/* 内容区滚动条 */
+.settings-content-area::-webkit-scrollbar {
+  width: 8px;
+}
+
+.settings-content-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.settings-content-area::-webkit-scrollbar-thumb {
+  background: var(--theme-border-light);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.settings-content-area::-webkit-scrollbar-thumb:hover {
+  background: var(--theme-border-medium);
+  background-clip: content-box;
+}
+
+/* 导航栏滚动条：更细，避免视觉干扰 */
+.settings-navigation::-webkit-scrollbar {
+  width: 4px;
+}
+
+.settings-navigation::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.settings-navigation::-webkit-scrollbar-thumb {
+  background: var(--theme-border-light);
+  border-radius: 2px;
+}
+
+/* 设置区域包装器 */
+.settings-section-wrapper {
+  margin-bottom: 32px;
+  scroll-margin-top: 20px;
+}
+
+.settings-section-wrapper:last-child {
+  margin-bottom: 0;
+}
+
+/* 响应式设计：断点下调，避免 13 寸屏（1280px 减竖栏）过早切换为纵向堆叠 */
+@media (max-width: 1024px) {
+  .settings-navigation {
+    width: 180px;
+    padding: 16px 10px;
+  }
+
+  .settings-content-area {
+    padding: 24px 22px 32px;
+  }
+
+  .nav-label {
+    font-size: 12px;
+  }
+}
+
+/* 窄窗口：导航转为顶部横向标签条 */
+@media (max-width: 860px) {
+  .settings-body {
+    flex-direction: column;
+  }
+
+  .settings-navigation {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--theme-border-light);
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .nav-title {
+    display: none;
+  }
+
+  .nav-menu {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+
+  .nav-item {
+    flex-shrink: 0;
+    width: auto;
+    white-space: nowrap;
+  }
+
+  .settings-content-area {
+    padding: 20px 18px 28px;
+  }
+}
+</style>

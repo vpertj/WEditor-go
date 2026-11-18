@@ -1,0 +1,557 @@
+/* AppHeader 组件样式 - 垂直布局 */
+.app-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: var(--spacing-xl) 0;
+  background: var(--theme-bg-primary, #ffffff);
+  border-right: 1px solid var(--theme-border-light, #e0e0e0);
+  box-shadow: 1px 0 3px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+  position: relative;
+  overflow: visible;
+  width: 64px;
+  height: 100vh;
+  /* MyGo bridge 读 --app-region（自定义属性）；保留 -webkit- 前缀兼容旧 WKWebView 语义 */
+  --app-region: drag;
+  -webkit-app-region: drag;
+  user-select: none;
+}
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+}
+
+/* 品牌区（Logo + 标题） */
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-lg);
+  --app-region: no-drag;
+  -webkit-app-region: no-drag;
+}
+
+/* 放大 LOGO */
+.logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--theme-primary-15);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.logo-placeholder {
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--theme-primary);
+  letter-spacing: -0.02em;
+}
+
+/* 品牌文字：竖栏空间紧张，仅显示产品名首字母缩写式标识 */
+.brand-text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.brand-text h1 {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--theme-text-secondary, #64748b);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.header-subtitle {
+  display: none;
+}
+
+.header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+  width: 100%;
+  --app-region: no-drag;
+  -webkit-app-region: no-drag;
+}
+
+/* 确保DropdownMenu在垂直工具栏中竖排显示 */
+.app-header.vertical .dropdown {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.app-header.vertical .dropdown-trigger {
+  margin: 0 auto;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  gap: 0;
+  background: var(--gray-100);
+  border: none;
+  box-shadow: var(--shadow-neumorphism-small);
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+  --app-region: no-drag;
+  -webkit-app-region: no-drag;
+}
+
+/* 优化按钮间距和排列 */
+.app-header.vertical .header-right {
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+/* ============================================================
+   核心操作：复制排版主按钮
+   这是产品唯一让用户付费的功能，视觉权重必须高于其他控件
+   ============================================================ */
+.app-header.vertical .header-btn-primary {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--theme-primary);
+  border: none;
+  color: white;
+  box-shadow: 0 4px 12px rgba(var(--theme-primary-rgb, 14, 165, 233), 0.32);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all 0.2s ease;
+  --app-region: no-drag;
+  -webkit-app-region: no-drag;
+}
+
+.app-header.vertical .header-btn-primary:not(:disabled):hover {
+  background: var(--theme-primary-hover, var(--theme-primary));
+  box-shadow: 0 6px 16px rgba(var(--theme-primary-rgb, 14, 165, 233), 0.42);
+  transform: translateY(-1px);
+}
+
+.app-header.vertical .header-btn-primary:not(:disabled):active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(var(--theme-primary-rgb, 14, 165, 233), 0.3);
+}
+
+/* 主按钮用自定义 slot 内容，需要压掉通用按钮的纵向排布与文字样式 */
+.app-header.vertical .header-btn-primary .primary-trigger {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: white;
+  line-height: 1;
+}
+
+.app-header.vertical .header-btn-primary .primary-trigger svg {
+  width: 20px;
+  height: 20px;
+  color: white;
+}
+
+.app-header.vertical .header-btn-primary .primary-trigger-label {
+  font-size: 9px;
+  line-height: 1;
+  color: white;
+  opacity: 0.95;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+/* 无内容可复制时降级为禁用态，但仍保持可识别的位置感 */
+.app-header.vertical .header-btn-primary:disabled {
+  background: var(--gray-100, #f1f5f9);
+  color: var(--gray-400, #94a3b8);
+  box-shadow: var(--shadow-xs, none);
+  cursor: not-allowed;
+}
+
+.app-header.vertical .header-btn-primary:disabled .primary-trigger {
+  color: var(--gray-400, #94a3b8);
+}
+
+.app-header.vertical .header-btn-primary:disabled .primary-trigger svg {
+  color: var(--gray-400, #94a3b8);
+}
+
+.app-header.vertical .header-btn-primary:disabled .primary-trigger-label {
+  color: var(--gray-400, #94a3b8);
+  opacity: 1;
+}
+
+/* 分隔线 */
+.app-header.vertical .toolbar-divider.vertical {
+  margin: 4px 0;
+  width: 32px;
+  height: 1px;
+  background-color: var(--theme-border-light, #e2e8f0);
+  flex-shrink: 0;
+}
+
+/* 次要控件：只留图标，不显示文字标签（竖栏空间有限） */
+.app-header.vertical .header-btn-compact {
+  width: 40px;
+  height: 40px;
+}
+
+.app-header.vertical .header-btn-compact span {
+  display: none;
+}
+
+/* 优化视图切换按钮组样式 */
+.app-header.vertical .view-toggle-group {
+  gap: 8px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.app-header.vertical .view-toggle-btn {
+  width: 48px;
+  height: 56px;
+  border-radius: 12px;
+  background: var(--gray-100);
+  border: none;
+  box-shadow: var(--shadow-neumorphism-small);
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+  --app-region: no-drag;
+  -webkit-app-region: no-drag;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 4px 0;
+}
+
+/* 视图切换按钮文字标签 */
+.view-toggle-label {
+  font-size: 10px;
+  line-height: 1;
+  color: inherit;
+  max-width: 48px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.view-toggle-btn.active .view-toggle-label {
+  color: white;
+}
+
+/* 优化header-btn样式，使其更适合垂直工具栏 */
+.app-header.vertical .header-btn {
+  width: 48px;
+  height: 56px;
+  padding: 4px 0;
+  gap: 3px;
+  border-radius: 12px;
+  margin: 0;
+  background: var(--gray-100);
+  border: none;
+  box-shadow: var(--shadow-neumorphism-small);
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 统一按钮悬停和激活样式 */
+.app-header.vertical .view-toggle-btn:hover,
+.app-header.vertical .header-btn:hover,
+.app-header.vertical .dropdown-trigger:hover {
+  color: var(--theme-primary);
+  box-shadow: var(--shadow-neumorphism-pressed);
+  transform: translateY(-1px);
+}
+
+.app-header.vertical .view-toggle-btn:active,
+.app-header.vertical .header-btn:active,
+.app-header.vertical .dropdown-trigger:active {
+  color: var(--theme-primary-dark);
+  box-shadow: inset var(--spacing-xs) var(--spacing-xs) var(--spacing-md) rgba(163, 177, 198, 0.5),
+    inset calc(-1 * var(--spacing-xs)) calc(-1 * var(--spacing-xs)) var(--spacing-md) rgba(255, 255, 255, 0.9);
+  transform: translateY(0);
+}
+
+/* 优化按钮组之间的分隔 */
+.app-header.vertical .toolbar-divider.vertical {
+  margin: 10px 0;
+  width: 36px;
+  height: 1px;
+  background-color: var(--theme-border-light);
+}
+
+/* 统一按钮图标样式 */
+.app-header.vertical .view-toggle-btn svg,
+.app-header.vertical .header-btn svg,
+.app-header.vertical .dropdown-trigger svg {
+  width: 22px;
+  height: 22px;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+  --app-region: no-drag;
+  -webkit-app-region: no-drag;
+}
+
+.app-header.vertical .view-toggle-btn:hover svg,
+.app-header.vertical .header-btn:hover svg,
+.app-header.vertical .dropdown-trigger:hover svg {
+  color: var(--theme-primary);
+  transform: scale(1.05);
+}
+
+/* 激活状态样式 */
+.app-header.vertical .view-toggle-btn.active {
+  background: var(--theme-primary);
+  color: white;
+  box-shadow: 0 4px 12px rgba(var(--theme-primary-rgb), 0.3);
+}
+
+.app-header.vertical .view-toggle-btn.active svg {
+  color: white;
+}
+
+.app-header.vertical .header-btn.active {
+  background: var(--theme-primary);
+  color: white;
+  box-shadow: 0 4px 12px rgba(var(--theme-primary-rgb), 0.3);
+}
+
+.app-header.vertical .header-btn.active svg {
+  color: white;
+}
+
+/* ============================================================
+   基础按钮样式
+   注：原文件此处存在第二套 .header-btn 定义（width/height 50px、
+   Neumorphism 阴影等），会覆盖上方 .app-header.vertical 的特化规则
+   （48×56px、无阴影），导致竖栏按钮尺寸与阴影不一致。已移除。
+   竖栏内的所有按钮统一由 .app-header.vertical 系列规则控制。
+   ============================================================ */
+
+/* 选中状态（设置按钮展开时） */
+.app-header.vertical .header-btn.active {
+  background: var(--theme-primary);
+  color: white;
+  box-shadow: 0 4px 12px rgba(var(--theme-primary-rgb, 14, 165, 233), 0.3);
+}
+
+.app-header.vertical .header-btn.active:hover {
+  background: var(--theme-primary-hover, var(--theme-primary));
+  color: white;
+}
+
+/* 禁用状态 */
+.app-header.vertical .header-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: var(--gray-400, #94a3b8);
+  box-shadow: var(--shadow-xs, none);
+}
+
+.app-header.vertical .header-btn:disabled:hover {
+  color: var(--gray-400, #94a3b8);
+  box-shadow: var(--shadow-xs, none);
+}
+
+/* 图标样式 */
+.app-header.vertical .header-btn svg {
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  opacity: 0.9;
+  color: var(--text-secondary);
+}
+
+/* 文字样式 - 显示为图标下方小标签 */
+.header-btn span {
+  display: block;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 500;
+  color: var(--text-secondary);
+  max-width: 48px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-header.vertical .header-btn:hover span,
+.app-header.vertical .header-btn.active span {
+  font-weight: 700;
+  color: inherit;
+}
+
+/* 焦点状态（无障碍） */
+.app-header.vertical .header-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(var(--theme-primary-rgb, 14, 165, 233), 0.35);
+}
+
+.app-header.vertical .header-btn-primary:focus-visible {
+  box-shadow: 0 0 0 3px rgba(var(--theme-primary-rgb, 14, 165, 233), 0.5);
+}
+
+/* 视图切换按钮组样式 */
+.view-toggle-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  margin: 0;
+  backdrop-filter: none;
+  box-shadow: none;
+  width: 100%;
+}
+
+.view-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--theme-border-light);
+  border-radius: 8px;
+  background: var(--theme-bg-primary);
+  color: var(--gray-500);
+  cursor: pointer;
+  transition: var(--transition-all-normal);
+  margin: 0;
+}
+
+.view-toggle-btn:hover {
+  background: var(--theme-bg-secondary);
+  color: var(--theme-primary);
+  border-color: var(--theme-primary);
+}
+
+.view-toggle-btn.active {
+  background: var(--theme-primary);
+  color: white;
+  border-color: var(--theme-primary);
+  box-shadow: 0 2px 4px rgba(var(--theme-primary-rgb), 0.3);
+}
+
+.view-toggle-btn.active:hover {
+  background: var(--theme-primary-hover);
+  color: white;
+}
+
+/* 视图切换按钮的焦点状态 */
+.view-toggle-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(var(--theme-primary-rgb), 0.3);
+}
+
+/* 视图切换按钮的禁用状态 */
+.view-toggle-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: var(--gray-400);
+}
+
+.view-toggle-btn:disabled:hover {
+  background: transparent;
+  color: var(--gray-400);
+}
+
+/* 保留旧的 .btn 类以兼容 DropdownMenu */
+.btn:hover {
+  background: var(--theme-bg-secondary);
+  border-color: var(--theme-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.btn-github {
+  background: var(--gradient-github);
+  color: var(--white);
+  border-color: var(--gray-800);
+}
+
+.btn-github:hover {
+  background: var(--gradient-github-hover);
+  border-color: var(--gray-600);
+}
+
+.btn-secondary {
+  background: linear-gradient(135deg, var(--theme-bg-tertiary) 0%, var(--theme-bg-secondary) 100%);
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+  .app-header {
+    padding: var(--spacing-xl) var(--spacing-3xl);
+  }
+}
+
+@media (max-width: 768px) {
+  .app-header {
+    padding: var(--spacing-md) var(--spacing-3xl);
+    flex-wrap: wrap;
+    gap: var(--spacing-lg);
+  }
+
+  .header-left h1 {
+    font-size: 20px;
+  }
+
+  .header-subtitle {
+    display: none;
+  }
+
+  .header-btn {
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: 13px;
+  }
+
+  .header-btn span {
+    display: none;
+  }
+
+  .view-toggle-group {
+    margin-right: var(--spacing-md);
+  }
+}

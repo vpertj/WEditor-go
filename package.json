@@ -1,0 +1,19 @@
+{
+  "name": "weditor",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "mygo dev",
+    "build": "mygo build",
+    "generate": "mygo generate",
+    "dev:web": "npm --prefix frontend run dev",
+    "build:web": "npm --prefix frontend run build"
+  },
+  "dependencies": {
+    "mygo-runtime": "^0.10.0"
+  },
+  "devDependencies": {
+    "mygo-cli": "^0.10.0",
+    "vite": "^8"
+  }
+}

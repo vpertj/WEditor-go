@@ -1,0 +1,521 @@
+<template>
+  <div class="preview-pane">
+    <!-- 预览模式切换工具栏 -->
+    <div class="preview-toolbar">
+      <div class="preview-mode-selector">
+        <label class="mode-label">预览模式:</label>
+        <div class="mode-buttons">
+          <button
+            v-for="mode in viewportModes"
+            :key="mode.key"
+            @click="currentViewportMode = mode.key"
+            :class="['mode-btn', { active: currentViewportMode === mode.key }]"
+            :title="mode.description"
+          >
+            <!-- 桌面端图标 -->
+            <svg v-if="mode.key === 'desktop'" class="mode-icon" viewBox="0 0 24 24" width="18" height="18">
+              <path fill="currentColor" d="M21,16H3V4H21M21,2H3C1.89,2 1,2.89 1,4V16A2,2 0 0,0 3,18H10V20H8V22H16V20H14V18H21A2,2 0 0,0 23,16V4C23,2.89 22.1,2 21,2Z"/>
+            </svg>
+            <!-- 平板图标 -->
+            <svg v-else-if="mode.key === 'tablet'" class="mode-icon" viewBox="0 0 24 24" width="18" height="18">
+              <path fill="currentColor" d="M19,18H5V6H19M21,4H3C1.89,4 1,4.89 1,6V18A2,2 0 0,0 3,20H21A2,2 0 0,0 23,18V6C23,4.89 22.1,4 21,4Z"/>
+            </svg>
+            <!-- 手机图标 -->
+            <svg v-else-if="mode.key === 'mobile'" class="mode-icon" viewBox="0 0 24 24" width="18" height="18">
+              <path fill="currentColor" d="M17,19H7V5H17M17,1H7C5.89,1 5,1.89 5,3V21A2,2 0 0,0 7,23H17A2,2 0 0,0 19,21V3C19,1.89 18.1,1 17,1Z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="viewport-info">
+        <span class="viewport-size">{{ getCurrentModeInfo().size }}</span>
+      </div>
+    </div>
+
+    <!-- 预览容器 -->
+    <div class="preview-container" :class="['preview-container', `viewport-${currentViewportMode}`, `theme-system-${currentLayoutId}`]">
+      <!-- 渲染预览模式 -->
+      <div ref="previewContent"
+           class="preview-rendered markdown-body modern-markdown"
+           :class="getPreviewClasses()"
+           @scroll="handleScroll"
+           v-html="renderedHtml">
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { parseMarkdown } from '../core/markdown/parser/coordinator.js'
+import { useGlobalThemeManager } from '../composables/index.js'
+import { escapeHtml as sharedEscapeHtml } from '../shared/utils/text.js'
+// mermaid 按需动态加载（仅文档含 .mermaid 块时引入），不阻塞首屏
+
+// 预览专用：剥离微信导出的内联 style 属性，让 CSS 主题系统完全接管预览排版。
+// - 仅作用于预览 DOM，不影响公众号导出 HTML（导出仍用 formatter 的内联样式）
+// - pre 代码块内部的语法高亮 span / 红绿灯保留，只处理块级与常用内联标签
+const PREVIEW_STRIP_SELECTOR = [
+  'p', 'strong', 'em', 'a', 'blockquote',
+  'table', 'thead', 'tbody', 'tr', 'th', 'td',
+  'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+  'hr', 'img', 'del', 'code'
+].join(',')
+function stripExportStyles(rootEl) {
+  const root = rootEl || document.querySelector('.preview-rendered')
+  if (!root) return
+  root.querySelectorAll(PREVIEW_STRIP_SELECTOR).forEach((el) => {
+    // 代码块内部不处理（语法高亮、红绿灯按钮、滚动容器等依赖内联样式）
+    if (el.closest('pre')) return
+    el.removeAttribute('style')
+  })
+}
+
+// 通用防抖工具函数
+function debounce(fn, delay = 300) {
+  let timer = null
+  let lastArgs = null
+  const debounced = (...args) => {
+    lastArgs = args
+    if (timer) clearTimeout(timer)
+    timer = setTimeout(() => {
+      timer = null
+      fn(...lastArgs)
+    }, delay)
+  }
+  debounced.cancel = () => {
+    if (timer) clearTimeout(timer)
+    timer = null
+  }
+  return debounced
+}
+
+// 通用节流工具函数 (leading + trailing)
+function throttle(fn, interval = 200) {
+  let lastTime = 0
+  let timer = null
+  const throttled = (...args) => {
+    const now = Date.now()
+    if (now - lastTime >= interval) {
+      lastTime = now
+      fn(...args)
+    } else if (!timer) {
+      timer = setTimeout(() => {
+        lastTime = Date.now()
+        timer = null
+        fn(...args)
+      }, interval - (now - lastTime))
+    }
+  }
+  throttled.cancel = () => {
+    if (timer) clearTimeout(timer)
+    timer = null
+  }
+  return throttled
+}
+
+export default {
+  name: 'PreviewPane',
+  props: {
+    markdown: {
+      type: String,
+      default: ''
+    },
+    syncScrollEnabled: {
+      type: Boolean,
+      default: true
+    }
+  },
+  emits: ['html-generated'],
+  setup(props, { emit }) {
+    // 使用统一主题管理器
+    const themeManager = useGlobalThemeManager()
+
+    // 解构所需功能
+    const {
+      currentThemeSystemId: currentLayoutId,
+      currentColorTheme,
+      currentCodeStyle,
+      currentFontSettings,
+      initialize
+    } = themeManager
+
+    const renderedHtml = ref('')
+    const socialHtml = ref('')
+    const previewContent = ref(null)
+    const currentViewportMode = ref('desktop')
+    const scrollPosition = ref(0)
+    // 移除多余的变量声明，现在在滚动时实时获取
+
+    // 预览模式配置
+    const viewportModes = [
+      {
+        key: 'desktop',
+        size: '100%',
+        maxWidth: 'none',
+        description: '桌面端预览 - 宽屏显示'
+      },
+      {
+        key: 'tablet',
+        size: '768px',
+        maxWidth: '768px',
+        description: '平板端预览 - 中等屏幕'
+      },
+      {
+        key: 'mobile',
+        size: '375px',
+        maxWidth: '375px',
+        description: '移动端预览 - 手机屏幕'
+      }
+    ]
+
+    // 获取当前模式信息
+    const getCurrentModeInfo = () => {
+      return viewportModes.find(mode => mode.key === currentViewportMode.value) || viewportModes[0]
+    }
+
+    // 获取预览样式类
+    const getPreviewClasses = () => {
+      return {
+        [`viewport-${currentViewportMode.value}`]: true,
+        'viewport-mobile': currentViewportMode.value === 'mobile',
+        'viewport-tablet': currentViewportMode.value === 'tablet',
+        'viewport-desktop': currentViewportMode.value === 'desktop',
+        // 挂载排版主题系统类，便于在CSS中按主题覆盖样式
+        [`theme-system-${currentLayoutId.value}`]: true
+      }
+    }
+
+    // 保存和恢复滚动位置
+    const saveScrollPosition = () => {
+      if (previewContent.value) {
+        const scrollTop = previewContent.value.scrollTop
+        const scrollHeight = previewContent.value.scrollHeight
+        const clientHeight = previewContent.value.clientHeight
+
+        // 保存滚动百分比而不是绝对位置，这样在内容高度变化时更准确
+        scrollPosition.value = {
+          scrollTop,
+          scrollPercentage: scrollHeight > clientHeight ? scrollTop / (scrollHeight - clientHeight) : 0,
+          timestamp: Date.now()
+        }
+      }
+    }
+
+    const restoreScrollPosition = () => {
+      if (previewContent.value && scrollPosition.value) {
+        const { scrollPercentage } = scrollPosition.value
+        const scrollHeight = previewContent.value.scrollHeight
+        const clientHeight = previewContent.value.clientHeight
+        const maxScrollTop = Math.max(0, scrollHeight - clientHeight)
+        const targetScrollTop = Math.round(maxScrollTop * scrollPercentage)
+        
+        if (typeof window !== 'undefined') window.__scrollSyncLock = true
+        previewContent.value.scrollTop = targetScrollTop
+        if (typeof window !== 'undefined') requestAnimationFrame(() => { window.__scrollSyncLock = false })
+      }
+    }
+
+    // 节流后的保存滚动位置（每 200ms 最多保存一次）
+    const saveScrollPositionThrottled = throttle(() => {
+      saveScrollPosition()
+    }, 200)
+
+    // 滚动同步处理
+    const handleScroll = (e) => {
+      const element = e.target
+      const scrollTop = element.scrollTop
+      const scrollHeight = element.scrollHeight
+      const clientHeight = element.clientHeight
+
+      // 节流保存滚动位置（避免每帧都写 localStorage）
+      saveScrollPositionThrottled()
+
+      // 只有在启用同步滚动时才执行同步；程序触发的滚动需要跳过
+      if (!props.syncScrollEnabled || (typeof window !== 'undefined' && window.__scrollSyncLock)) return
+
+      // 计算滚动百分比
+      const maxScrollTop = Math.max(0, scrollHeight - clientHeight)
+      const scrollPercentage = maxScrollTop > 0 ? scrollTop / maxScrollTop : 0
+
+      // 同步到编辑器（用 requestAnimationFrame 替代 setTimeout(0)，对齐渲染帧）
+      const editorElement = document.querySelector('.cm-scroller')
+      if (editorElement) {
+        const editorMaxScrollTop = Math.max(0, editorElement.scrollHeight - editorElement.clientHeight)
+        const targetScrollTop = Math.round(editorMaxScrollTop * scrollPercentage)
+        if (typeof window !== 'undefined') window.__scrollSyncLock = true
+        editorElement.scrollTop = targetScrollTop
+        if (typeof window !== 'undefined') {
+          requestAnimationFrame(() => { window.__scrollSyncLock = false })
+        }
+      }
+    }
+
+    // 监听视口模式变化，添加平滑过渡
+    watch(currentViewportMode, (_, oldMode) => {
+      if (oldMode) {
+        saveScrollPosition()
+
+        // 添加切换动画类
+        if (previewContent.value) {
+          previewContent.value.classList.add('viewport-transitioning')
+
+          // 动画完成后移除类并恢复滚动位置
+          setTimeout(() => {
+            if (previewContent.value) {
+              previewContent.value.classList.remove('viewport-transitioning')
+              restoreScrollPosition()
+            }
+          }, 300)
+        }
+      }
+    })
+
+    // 缓存当前主题对象（避免每次 processMarkdown 都读 localStorage + JSON.parse）
+    let cachedTheme = null
+    let cachedThemeExpiry = 0
+
+    // 获取当前有效的颜色主题（包括临时自定义主题）
+    const getCurrentTheme = () => {
+      const now = Date.now()
+      if (now < cachedThemeExpiry && cachedTheme !== null) {
+        return cachedTheme
+      }
+      try {
+        const tempTheme = localStorage.getItem('temp-custom-theme')
+        if (tempTheme) {
+          cachedTheme = JSON.parse(tempTheme)
+        } else {
+          cachedTheme = currentColorTheme.value
+        }
+      } catch (error) {
+        console.warn('Failed to load temp custom theme:', error)
+        cachedTheme = currentColorTheme.value
+      }
+      cachedThemeExpiry = now + 5000 // 5秒内复用缓存
+      return cachedTheme
+    }
+
+    // 使主题缓存失效（主题变更时调用）
+    const invalidateThemeCache = () => {
+      cachedThemeExpiry = 0
+      cachedTheme = null
+    }
+
+    // 处理Markdown解析和转换
+    const processMarkdown = async () => {
+      if (!props.markdown) {
+        renderedHtml.value = ''
+        socialHtml.value = ''
+        emit('html-generated', '')
+        return
+      }
+
+      try {
+        // 获取当前有效主题（可能是临时自定义主题）
+        const effectiveTheme = getCurrentTheme()
+
+        // 预览版本：标记 isPreview，样式由 CSS 主题接管（stripExportStyles + 主题类）。
+        // 先渲染预览、再惰性生成公众号格式：完整 Markdown 解析开销大，
+        // 原先同步跑两遍会双倍阻塞每次输入后的重渲染。
+        const previewFormatted = parseMarkdown(props.markdown, {
+          theme: effectiveTheme,
+          codeTheme: currentCodeStyle.value,
+          themeSystem: currentLayoutId.value,
+          fontSettings: currentFontSettings.value,
+          isPreview: true
+        })
+        renderedHtml.value = previewFormatted
+
+        // 等待DOM更新后再渲染 Mermaid
+        await nextTick()
+
+        // 剥离微信导出内联样式（预览专用），使 CSS 主题完全接管排版
+        stripExportStyles(previewContent.value)
+
+        // Mermaid 按需加载：仅当文档包含 .mermaid 块时才动态引入（降低首屏启动开销）
+        const containerEl = document.querySelector('.preview-rendered')
+        if (containerEl && containerEl.querySelectorAll('.mermaid').length > 0) {
+          try {
+            const { default: mermaid } = await import('mermaid')
+            mermaid.initialize({
+              startOnLoad: false,
+              securityLevel: 'strict',
+              deterministicIds: true,
+              deterministicIDSeed: 'preview-mermaid',
+              flowchart: {
+                htmlLabels: false, // 重要：避免使用 foreignObject，以适配公众号
+                useMaxWidth: true
+              },
+              themeVariables: {
+                fontFamily: '"Microsoft YaHei", "微软雅黑", Arial, sans-serif'
+              }
+            })
+
+            // 快速合法性检查：首个有效行必须是已知图类型指令
+            const isLikelyMermaid = (def) => {
+              const lines = (def || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean)
+              // 过滤掉可能的 init 指令与注释
+              const first = lines.find(l => !/^%%/.test(l) && !/^%%\{.*\}%%$/.test(l)) || ''
+              const starters = [
+                'graph', 'flowchart', 'sequenceDiagram', 'classDiagram', 'stateDiagram',
+                'erDiagram', 'gantt', 'journey', 'pie', 'gitGraph', 'mindmap', 'timeline',
+                'requirementDiagram', 'sankey', 'xychart-beta', 'block-beta', 'zenuml'
+              ]
+              return starters.some(s => first.startsWith(s))
+            }
+
+            // 清理上一次渲染插入的 SVG 与错误提示块，避免越堆越多
+            containerEl.querySelectorAll('.mermaid svg, .mermaid-error, .mermaid-error-hidden').forEach(n => n.remove())
+
+            // 为 mermaid.render 提供离屏 sandbox，阻断其往 body 追加错误节点
+            const sandbox = document.createElement('div')
+            sandbox.style.position = 'fixed'
+            sandbox.style.left = '-99999px'
+            sandbox.style.top = '-99999px'
+            sandbox.style.width = '0'
+            sandbox.style.height = '0'
+            sandbox.style.overflow = 'hidden'
+            document.body.appendChild(sandbox)
+
+            try {
+              // 按块渲染；对每个 mermaid 源只保留一个渲染结果或一个错误提示
+              const blocks = Array.from(containerEl.querySelectorAll('.mermaid'))
+              for (let i = 0; i < blocks.length; i++) {
+                const el = blocks[i]
+                const def = (el.textContent || '').trim()
+                // 非法/非 mermaid 指令的片段直接跳过，避免 mermaid 注入错误卡片
+                if (!isLikelyMermaid(def)) continue
+                if (!def) continue
+                try {
+                  const id = `mmd-prev-${i}-${Math.random().toString(36).slice(2)}`
+                  const { svg } = await mermaid.render(id, def, undefined, sandbox)
+                  const wrap = document.createElement('div')
+                  wrap.innerHTML = svg
+                  const hasError = wrap.querySelector('.error-icon') || /Syntax error/i.test(wrap.textContent || '')
+                  const svgEl = wrap.querySelector('svg')
+                  if (!hasError && svgEl) {
+                    // 正常渲染：替换为 SVG
+                    el.replaceWith(svgEl)
+                  } else {
+                    // 屏蔽错误卡片：不在页面显示，放置一个隐藏占位符
+                    const ph = document.createElement('div')
+                    ph.className = 'mermaid-error-hidden'
+                    ph.style.display = 'none'
+                    el.replaceWith(ph)
+                  }
+                } catch (perr) {
+                  console.warn('Mermaid 单块渲染失败（预览继续）:', perr)
+                  // 渲染异常时也隐藏该块，避免显示错误卡片或原始源码
+                  const ph = document.createElement('div')
+                  ph.className = 'mermaid-error-hidden'
+                  ph.style.display = 'none'
+                  el.replaceWith(ph)
+                }
+              }
+            } finally {
+              sandbox.remove()
+            }
+          } catch (merr) {
+            console.warn('Mermaid 渲染失败:', merr)
+          }
+        }
+
+        // 3. 公众号格式（供一键复制）：预览与 Mermaid 渲染完成后再生成，
+        //    把第二次完整解析挪出输入响应路径；期间保留旧结果可用。
+        const socialFormatted = parseMarkdown(props.markdown, {
+          theme: effectiveTheme,
+          codeTheme: currentCodeStyle.value,
+          themeSystem: currentLayoutId.value,
+          fontSettings: currentFontSettings.value
+        })
+        socialHtml.value = socialFormatted
+        emit('html-generated', socialFormatted)
+      } catch (error) {
+        console.error('处理Markdown时出错:', error)
+        const safeMsg = (error && error.message) ? sharedEscapeHtml(String(error.message)) : '未知错误'
+        const errorMessage = `<div class="error">
+          <h3>❌ 处理错误</h3>
+          <p>错误信息: ${safeMsg}</p>
+          <p>请检查Markdown语法或联系开发者。</p>
+        </div>`
+
+        renderedHtml.value = errorMessage
+        socialHtml.value = ''
+        emit('html-generated', '')
+      }
+    }
+
+    // 创建防抖版本（300ms延迟，避免每次按键都重渲染）
+    const processMarkdownDebounced = debounce(() => {
+      processMarkdown()
+    }, 300)
+
+    // 监听markdown内容变化
+    // - 从空到非空（加载文件/示例）：立即渲染，不等待防抖，提升打开速度感知
+    // - 其它情况（输入）：300ms 防抖，避免逐键触发完整渲染
+    watch(() => props.markdown, (newVal, oldVal) => {
+      invalidateThemeCache()
+      if (newVal && !oldVal) {
+        processMarkdown()
+      } else {
+        processMarkdownDebounced()
+      }
+    })
+
+    // 合并所有主题相关 watcher 为一个，300ms 防抖，避免启动时多次级联渲染
+    // 监听：颜色主题、代码样式、布局主题系统、字体设置
+    watch(
+      [currentColorTheme, currentCodeStyle, currentLayoutId, currentFontSettings],
+      () => {
+        invalidateThemeCache()
+        processMarkdownDebounced()
+      },
+      { deep: true }
+    )
+
+    // 监听临时自定义主题变化
+    const handleCustomThemeChange = () => {
+      invalidateThemeCache()
+      processMarkdownDebounced()
+    }
+
+    // 组件生命周期
+    onMounted(() => {
+      // 初始化主题系统
+      initialize()
+
+      // 初始化完成后立即处理markdown
+      processMarkdown()
+
+      // 监听自定义主题变化事件
+      window.addEventListener('custom-theme-changed', handleCustomThemeChange)
+    })
+
+    onUnmounted(() => {
+      // 清理mermaid渲染的DOM元素，防止内存泄漏
+      const containerEl = document.querySelector('.preview-rendered')
+      if (containerEl) {
+        containerEl.querySelectorAll('.mermaid svg, .mermaid-error, .mermaid-error-hidden').forEach(n => n.remove())
+      }
+      
+      // 移除自定义主题变化事件监听器
+      window.removeEventListener('custom-theme-changed', handleCustomThemeChange)
+    })
+
+    return {
+      renderedHtml,
+      socialHtml,
+      previewContent,
+      currentViewportMode,
+      viewportModes,
+      getCurrentModeInfo,
+      getPreviewClasses,
+      handleScroll,
+      currentLayoutId
+    }
+  }
+}
+</script>
+

@@ -1,0 +1,368 @@
+{
+  "common": {
+    "appName": "WEditor",
+    "ok": "确定",
+    "cancel": "取消",
+    "backToTop": "回到顶部"
+  },
+  "header": {
+    "brandTitle": "WEditor",
+    "view": {
+      "both": "编辑器 + 预览",
+      "editor": "仅显示编辑器",
+      "wysiwyg": "所见即所得（可编辑）",
+      "bothShort": "分栏",
+      "editorShort": "源码",
+      "wysiwygShort": "排版"
+    },
+    "settings": "设置",
+    "about": "关于",
+    "guide": "语法指南",
+    "copy": "复制",
+    "github": "GitHub",
+    "language": "语言",
+    "copyFormat": "复制排版"
+  },
+  "main": {
+    "editor": {
+      "title": "Markdown 编辑器",
+      "clear": "清空内容",
+      "loadSample": "加载示例",
+      "importMd": "导入 .md 文件"
+    },
+    "preview": {
+      "wysiwyg": "所见即所得",
+      "preview": "预览",
+      "syncScroll": "同步滚动"
+    },
+    "emptyGuide": {
+      "title": "写完直接排版，粘贴即成品",
+      "subtitle": "左边写 Markdown，点左上角「复制排版」，粘贴到公众号就是排好版的样子。",
+      "stepWrite": "写下内容",
+      "stepWriteDesc": "用 Markdown 语法，或切到「排版」视图直接写",
+      "stepCopy": "点「复制排版」",
+      "stepCopyDesc": "字体、行高、留白自动处理，图片自动加上题注",
+      "stepPaste": "粘贴到平台",
+      "stepPasteDesc": "粘贴进公众号后台，样式完整保留",
+      "platformTitle": "支持平台",
+      "platformWechat": "微信公众号",
+      "platformXiaohongshu": "小红书",
+      "platformZhihu": "知乎",
+      "moreTitle": "快捷键与语法速查",
+      "loadSample": "看一篇示例",
+      "close": "开始写作",
+      "shortcutsTitle": "常用快捷键",
+      "shortcutNew": "新建文档",
+      "shortcutOpen": "打开文件",
+      "shortcutSave": "保存",
+      "shortcutView": "切换视图",
+      "syntaxTitle": "基础语法速览",
+      "syntaxHeading": "# 标题",
+      "syntaxBold": "**粗体**",
+      "syntaxList": "- 列表",
+      "syntaxCode": "`代码`"
+    }
+  },
+  "footer": {
+    "characters": "{count} 字符",
+    "lines": "{count} 行",
+    "words": "{count} 词",
+    "minutes": "{count} 分钟"
+  },
+  "settings": {
+    "header": {
+      "title": "设置",
+      "subtitle": "个性化定制您的编辑器体验"
+    },
+    "nav": {
+      "quick": "快速导航",
+      "general": "通用",
+      "themeSystem": "主题系统",
+      "colorTheme": "主题色",
+      "codeStyle": "代码样式",
+      "font": "字体",
+      "fontSize": "字号",
+      "spacing": "间距",
+      "updates": "自动更新"
+    },
+    "update": {
+      "title": "自动更新",
+      "currentVersion": "当前版本",
+      "localBuild": "本地构建",
+      "checkNow": "立即检查",
+      "checking": "正在检查…",
+      "autoCheck": {
+        "title": "自动检查更新",
+        "description": "启动后自动在后台检查新版本，只有发现新版本时才会提示"
+      },
+      "viewDetail": "查看详情",
+      "foundNew": "发现新版本 {version}",
+      "lastCheckAt": "上次检查：{time}"
+    },
+    "general": {
+      "title": "通用设置",
+      "openMode": {
+        "title": "默认打开方式",
+        "description": "通过双击、拖放或打开对话框等方式打开文档时使用的视图模式",
+        "source": "源码",
+        "split": "分栏",
+        "typeset": "排版"
+      },
+      "defaultContent": {
+        "title": "启用默认内容",
+        "description": "启动时自动加载默认的 Markdown 示例内容；关闭后启动将显示空白文档",
+        "enableTip": "开启默认内容",
+        "disableTip": "关闭默认内容"
+      }
+    },
+    "footer": {
+      "apply": "应用设置"
+    },
+    "color": {
+      "customColor": "自定义颜色",
+      "pickAny": "选择任意颜色"
+    },
+    "font": {
+      "family": "字体族"
+    },
+    "spacing": {
+      "letter": "字间距",
+      "line": "行间距"
+    },
+    "code": {
+      "preview": "代码"
+    },
+    "colorPicker": {
+      "quickPick": "快速选择",
+      "previewTitle": "主题预览",
+      "previewSubtitle": "查看您的颜色主题效果",
+      "textSample": "这是正文文本的效果",
+      "primarySample": "这是主色调的效果"
+    },
+    "fontSize": {
+      "unitPx": "px",
+      "presets": {
+        "12": "小号 (12px)",
+        "14": "较小 (14px)",
+        "16": "标准 (16px)",
+        "18": "较大 (18px)",
+        "20": "大号 (20px)",
+        "22": "特大 (22px)",
+        "24": "超大 (24px)"
+      }
+    },
+    "fontFamily": {
+      "items": {
+        "microsoft-yahei": {
+          "name": "微软雅黑",
+          "description": "公众号兼容性最佳"
+        },
+        "pingfang-sc": {
+          "name": "苹方",
+          "description": "Apple 设备优选"
+        },
+        "hiragino-sans": {
+          "name": "冬青黑体",
+          "description": "Mac 经典中文字体"
+        },
+        "arial": {
+          "name": "Arial",
+          "description": "通用西文字体"
+        },
+        "system-safe": {
+          "name": "系统安全字体",
+          "description": "社交平台安全组合"
+        }
+      }
+    },
+    "themeSystem": {
+      "items": {
+        "default": {
+          "name": "默认主题",
+          "description": "现代化 Markdown 统一排版"
+        },
+        "breeze": {
+          "name": "清风排版",
+          "description": "面向移动端图文的清爽排版"
+        }
+      }
+    },
+    "colorTheme": {
+      "items": {
+        "chijin": {
+          "name": "洋红",
+          "description": "鲜艳明亮如玫瑰般绚烂"
+        },
+        "dianlan": {
+          "name": "紫棠",
+          "description": "深沉神秘，高贵典雅"
+        },
+        "ehuang": {
+          "name": "杏黄",
+          "description": "温润典雅，如秋日暖阳"
+        },
+        "conglv": {
+          "name": "葱绿",
+          "description": "清新自然，生机盎然"
+        },
+        "shiliuhong": {
+          "name": "石榴红",
+          "description": "热情醒目，绚烂夺目"
+        },
+        "meihei": {
+          "name": "煤黑",
+          "description": "深沉稳重，典雅内敛"
+        },
+        "ganziqing": {
+          "name": "绀青绀紫",
+          "description": "神秘优雅，古朴高贵"
+        },
+        "xuanse": {
+          "name": "玄色",
+          "description": "赤黑相间，深邃幽远"
+        }
+      }
+    },
+    "codeStyle": {
+      "items": {
+        "mac": {
+          "name": "Mac 风格",
+          "description": "经典 macOS 终端风格"
+        },
+        "github": {
+          "name": "GitHub 风格",
+          "description": "清爽的浅色代码块"
+        },
+        "vscode": {
+          "name": "VS Code 风格",
+          "description": "现代深色代码主题"
+        },
+        "terminal": {
+          "name": "终端风格",
+          "description": "复古黑底绿字终端"
+        }
+      }
+    }
+  },
+  "guide": {
+    "title": "Markdown 语法指南",
+    "subtitle": "快速掌握 Markdown 语法，提升写作效率",
+    "sections": {
+      "basic": "基础语法",
+      "lists": "列表",
+      "linksImages": "链接和图片",
+      "code": "代码块",
+      "table": "表格",
+      "misc": "其他语法"
+    },
+    "h1": "一级标题",
+    "h2": "二级标题",
+    "h3": "三级标题",
+    "bold": "粗体",
+    "italic": "斜体",
+    "strikethrough": "删除线",
+    "quote": "引用",
+    "inlineCode": "行内代码",
+    "unorderedList": "无序列表",
+    "orderedList": "有序列表",
+    "taskList": "任务列表",
+    "done": "已完成",
+    "todo": "待完成",
+    "link": "链接",
+    "image": "图片",
+    "imagePreview": "图片预览",
+    "codeBlock": "代码块",
+    "tableTitle": "表格",
+    "column1": "列 1",
+    "column2": "列 2",
+    "column3": "列 3",
+    "content1": "内容 1",
+    "content2": "内容 2",
+    "content3": "内容 3",
+    "hr": "分割线",
+    "escape": "转义字符",
+    "samples": {
+      "item1": "项目 1",
+      "item2": "项目 2",
+      "subitem": "子项目",
+      "first": "第一项",
+      "second": "第二项",
+      "third": "第三项",
+      "quoteText": "引用文本",
+      "text": "文本",
+      "linkText": "链接文本",
+      "altText": "描述文本"
+    },
+    "navTitle": "目录"
+  },
+  "toolbar": {
+    "h1": "一级标题",
+    "h2": "二级标题",
+    "h3": "三级标题",
+    "bold": "粗体",
+    "italic": "斜体",
+    "strikethrough": "删除线",
+    "link": "插入链接",
+    "image": "插入图片",
+    "code": "行内代码",
+    "codeBlock": "代码块",
+    "quote": "引用",
+    "list": "无序列表",
+    "orderedList": "有序列表",
+    "table": "插入表格",
+    "horizontalRule": "分割线"
+  },
+  "copyFormat": {
+    "social": "公众号格式",
+    "markdown": "MD 格式"
+  },
+  "update": {
+    "checking": "正在检查更新…",
+    "upToDate": "当前已是最新版本",
+    "noUpdate": "检查更新",
+    "unknownError": "检查更新失败",
+    "checkFailed": "检查更新失败",
+    "manualHint": "你也可以到 GitHub Releases 页面手动下载安装。",
+    "restartHint": "更新会重启应用；未保存的编辑已自动存为草稿，重启后可恢复。",
+    "publishedAt": "发布时间",
+    "packageSize": "安装包大小",
+    "notes": "更新说明",
+    "skipVersion": "跳过此版本",
+    "later": "稍后",
+    "revealFile": "打开下载目录",
+    "openReleasePage": "打开发布页面",
+    "checkAgain": "重新检查",
+    "downloadAndInstall": "下载并安装",
+    "installNow": "立即安装并重启",
+    "installing": "正在安装并重启…",
+    "downloading": "正在下载新版本",
+    "readyToInstall": "下载完成，可以安装",
+    "newVersionFound": "发现新版本"
+  },
+  "about": {
+    "title": "关于 WEditor",
+    "subtitle": "现代化的 Markdown 编辑器",
+    "softwareInfo": "软件信息",
+    "version": "版本",
+    "author": "作者",
+    "buildDate": "构建日期",
+    "license": "许可证",
+    "features": "功能介绍",
+    "feature1": {
+      "title": "现代化编辑体验",
+      "description": "提供流畅的 Markdown 编辑体验，支持实时预览和所见即所得模式"
+    },
+    "feature2": {
+      "title": "多平台支持",
+      "description": "支持 Windows、macOS 和 Linux 三大主流操作系统"
+    },
+    "feature3": {
+      "title": "丰富的自定义选项",
+      "description": "提供主题切换、字体调整等多种自定义选项，满足个性化需求"
+    },
+    "feature4": {
+      "title": "易用的导出功能",
+      "description": "支持导出为多种格式，方便分享和发布"
+    }
+  }
+}
