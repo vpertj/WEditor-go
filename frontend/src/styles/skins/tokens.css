@@ -1,0 +1,157 @@
+/* ============================================================
+   皮肤 Token 层（UI Skin Tokens）
+   - 皮肤只控制 chrome（窗口外壳/导航/工具条/状态条），不改 markdown 预览排版。
+   - 两套完整皮肤：
+       native     —— Apple HIG / Xcode vibrancy 材质（默认，浅色）
+       workbench  —— Raycast 创作者工作台（深蓝黑 + violet 强调）
+   - 选择器用 html[data-skin=...]（theme-loader.js 同步预写，防 FOUC；
+     App.vue #app 上也挂 :data-skin 便于组件级分支样式）。
+   - 业务 CSS 尽量引用本文件变量而非硬编码颜色。
+   - 与排版主题系统/颜色主题正交共存：--theme-* 由主题管理器动态覆盖，
+     skin 层不定义 --theme-*（仅 workbench 下做最小暗色适配，见末尾）。
+   ============================================================ */
+
+:root {
+  /* ===== 结构尺寸 ===== */
+  --skin-toolbar-h: 46px;          /* unified toolbar 高（native）/ 标题栏高（workbench=52px） */
+  --skin-sidebar-w: 242px;         /* native source-list 侧栏宽 */
+  --skin-rail-w: 0px;              /* workbench 图标 rail 宽（native=0） */
+  --skin-panel2-w: 0px;            /* workbench 第二列文档库面板宽（native=0） */
+  --skin-tabbar-h: 0px;            /* workbench 文档 tab 条高（native=0） */
+  --skin-footer-h: 28px;           /* 底部状态条高 */
+  --skin-lights-inset: 78px;       /* 红绿灯避让：文档切换器起始 x（native） */
+  --traffic-light-w: 62px;         /* 红绿灯区域宽度（拖拽区左侧留白） */
+
+  /* ===== 字体（chrome 用） ===== */
+  --skin-font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  --skin-font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* ===== 过渡 ===== */
+  --skin-transition: 180ms ease;
+}
+
+/* ------------------------------------------------------------
+   native · Apple HIG / Xcode 材料风
+   材质层次：桌面 → sidebar(中透) → toolbar(最透) → sheet(最实)
+   backdrop-filter blur + saturate 模拟 NSVisualEffectView vibrancy
+   ------------------------------------------------------------ */
+html[data-skin="native"],
+#app[data-skin="native"] {
+  /* 底色与表面（源自设计稿 B .window/.content） */
+  --app-bg: linear-gradient(180deg, #F2F2F6 0%, #EDEDF2 100%);
+  --surface: rgba(247, 247, 250, 0.86);          /* content 层 */
+  --surface-solid: #FCFCFE;                       /* 卡片/激活段背景 */
+  --surface-raised: linear-gradient(180deg, #FFFFFF, #F3F4F7); /* pop 按钮材质 */
+  --toolbar-bg: rgba(236, 236, 241, 0.50);
+  --toolbar-blur: blur(34px) saturate(2);
+  --sidebar-bg: rgba(233, 233, 235, 0.60);
+  --sidebar-blur: blur(26px) saturate(1.85);
+  --footer-bg: rgba(238, 238, 243, 0.66);
+  --footer-blur: blur(18px) saturate(1.7);
+  --formatbar-bg: rgba(242, 242, 247, 0.62);
+  --menu-bg: rgba(248, 248, 252, 0.74);
+  --menu-blur: blur(28px) saturate(1.9);
+
+  /* 文本（macOS label 体系） */
+  --text-primary: #1C1C1E;                        /* labelColor */
+  --text-secondary: rgba(60, 60, 67, 0.60);       /* secondaryLabelColor */
+  --text-tertiary: rgba(60, 60, 67, 0.34);        /* tertiaryLabelColor */
+
+  /* 强调与分隔（系统蓝 + separatorColor） */
+  --accent: #0A84FF;
+  --accent-rgb: 10, 132, 255;
+  --accent-teal: #2AB6A0;                          /* 自定义 accent 变体（badge） */
+  --border-hairline: rgba(0, 0, 0, 0.08);          /* separatorColor */
+  --border-hairline-strong: rgba(0, 0, 0, 0.14);
+  --grid-line: rgba(0, 0, 0, 0.055);
+  --sel-bg: rgba(0, 0, 0, 0.09);                   /* source-list 悬停/选中底 */
+  --hover-bg: rgba(0, 0, 0, 0.055);
+
+  /* segmented control */
+  --seg-track: rgba(0, 0, 0, 0.055);
+  --seg-thumb: #FCFCFE;
+  --seg-shadow: 0 0.5px 1.5px rgba(0, 0, 0, 0.18), 0 0 0 0.5px rgba(0, 0, 0, 0.05);
+
+  /* 工具按钮材质 */
+  --tb-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.14), 0 0.5px 1px rgba(0, 0, 0, 0.06);
+  --tb-hover-bg: rgba(255, 255, 255, 0.55);
+
+  /* 窗口圆角与阴影（浏览器 mock 环境用于呈现窗口壳） */
+  --window-radius: 0px;                            /* 桌面全屏时无需圆角 */
+  --window-shadow: none;
+
+  /* 底部平台快捷链接（公众号/小红书/知乎）配色 */
+  --plat-wx: #07C160;
+  --plat-xhs: #FF2442;
+  --plat-zh: #0084FF;
+
+  color-scheme: light;
+}
+
+/* ------------------------------------------------------------
+   workbench · Raycast 创作者工作台（深蓝黑）
+   64px icon rail + 280px 文档库第二列 + 顶部文档 tab 条 +
+   编辑|预览双栏（预览区三平台 tab）+ violet #7C5CFC 强调
+   ------------------------------------------------------------ */
+html[data-skin="workbench"],
+#app[data-skin="workbench"] {
+  --skin-toolbar-h: 52px;
+  --skin-sidebar-w: 0px;
+  --skin-rail-w: 64px;
+  --skin-panel2-w: 280px;
+  --skin-tabbar-h: 38px;
+  --skin-footer-h: 26px;
+  --skin-lights-inset: 78px;
+
+  /* 底色与表面（全局深蓝黑渐变材质 + 分层半透明） */
+  --app-bg: radial-gradient(1200px 500px at 22% -10%, rgba(124, 92, 252, 0.10), transparent 60%),
+            linear-gradient(160deg, #0D1117 0%, #10151D 46%, #161B22 100%);
+  --surface: rgba(22, 27, 34, 0.35);               /* 预览面板底 */
+  --surface-solid: #1C2128;                         /* card */
+  --surface-raised: #21262D;                        /* card2 hover */
+  --toolbar-bg: linear-gradient(180deg, rgba(22, 27, 34, 0.9), rgba(13, 17, 23, 0.9));
+  --toolbar-blur: blur(20px);
+  --rail-bg: rgba(1, 4, 9, 0.35);
+  --panel2-bg: rgba(22, 27, 34, 0.5);
+  --tabbar-bg: rgba(1, 4, 9, 0.35);
+  --footer-bg: rgba(1, 4, 9, 0.5);
+  --formatbar-bg: rgba(13, 17, 23, 0.5);
+  --menu-bg: rgba(28, 33, 40, 0.96);
+  --menu-blur: blur(20px) saturate(1.5);
+  --canvas-bg: rgba(8, 11, 16, 0.5);                /* 预览画布衬底 */
+
+  /* 文本（GitHub dark 系 ink/mut/faint） */
+  --text-primary: #E6EDF3;
+  --text-secondary: #8B949E;
+  --text-tertiary: #6E7681;
+
+  /* 强调 violet + hairline（深色描边是内阴影，非真边框） */
+  --accent: #7C5CFC;
+  --accent-rgb: 124, 92, 252;
+  --accent-hi: #8D72FF;
+  --border-hairline: rgba(240, 246, 252, 0.08);
+  --border-hairline-strong: rgba(240, 246, 252, 0.14);
+  --grid-line: rgba(240, 246, 252, 0.07);
+  --sel-bg: rgba(124, 92, 252, 0.14);
+  --hover-bg: rgba(240, 246, 252, 0.05);
+
+  /* segmented / tab 控件 */
+  --seg-track: rgba(1, 4, 9, 0.55);
+  --seg-thumb: linear-gradient(180deg, rgba(124, 92, 252, 0.32), rgba(124, 92, 252, 0.18));
+  --seg-shadow: 0 0 0 1px rgba(124, 92, 252, 0.55), 0 0 18px rgba(124, 92, 252, 0.35), 0 8px 24px -8px rgba(124, 92, 252, 0.45);
+
+  --tb-shadow: inset 0 0 0 1px rgba(240, 246, 252, 0.07);
+  --tb-hover-bg: #21262D;
+
+  --glow-violet: 0 0 0 1px rgba(124, 92, 252, 0.55), 0 0 18px rgba(124, 92, 252, 0.35);
+
+  /* 平台色（tab 语境整体切换） */
+  --plat-wx: #07C160;
+  --plat-xhs: #FF2442;
+  --plat-zh: #0084FF;
+  /* 当前平台强调（JS 切 tab 时改这个，主 CTA / 版心光晕跟随） */
+  --plat-accent: var(--plat-wx);
+  --plat-accent-rgb: 7, 193, 96;
+
+  color-scheme: dark;
+}

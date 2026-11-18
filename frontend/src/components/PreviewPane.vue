@@ -1,7 +1,35 @@
 <template>
-  <div class="preview-pane">
-    <!-- 预览模式切换工具栏 -->
-    <div class="preview-toolbar">
+  <div class="preview-pane" :class="{ 'is-workbench': skin === 'workbench' }">
+    <!-- workbench 皮肤：三平台 tab 条（公众号/小红书/知乎）；native 保持现状不显示 -->
+    <div v-if="skin === 'workbench'" class="pp-plat-bar">
+      <span class="pp-plat-label">预览</span><!-- TODO(i18n) -->
+      <button
+        v-for="p in PLATFORM_TABS"
+        :key="p.key"
+        class="pp-plat-tab"
+        :class="{ active: platKey === p.key, ['plat-' + p.key]: true }"
+        :title="p.key === 'wechat' ? '公众号版心 677px' : p.key === 'xiaohongshu' ? '小红书竖卡 360px' : '知乎自适应'"
+        @click="selectPlatform(p.key)"
+      >
+        <!-- 公众号 -->
+        <svg v-if="p.key==='wechat'" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M9.5 4C5.4 4 2 6.8 2 10.2c0 1.9 1 3.6 2.7 4.7l-.7 2.1 2.5-1.3c.8.2 1.6.4 2.5.4h.6a5.7 5.7 0 0 1-.2-1.5c0-3.3 3.2-6 7.1-6h.6C16.6 6 13.4 4 9.5 4zm-2.6 4a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm5.2 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/><path d="M22 14.4c0-2.8-2.7-5-6-5s-6 2.2-6 5 2.7 5 6 5c.7 0 1.4-.1 2-.3l2 1-.5-1.7c1.5-.9 2.5-2.3 2.5-4zm-8-1a.8.8 0 1 1 0-1.6.8.8 0 0 1 0 1.6zm4 0a.8.8 0 1 1 0-1.6.8.8 0 0 1 0 1.6z"/></svg>
+        <!-- 小红书 -->
+        <svg v-else-if="p.key==='xiaohongshu'" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10 7h4M10 11h4M10 15h2"/></svg>
+        <!-- 知乎 -->
+        <svg v-else width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M7.5 8.5h9M12 8.5V17M9 12c0 2.5 1.2 4.2 3.2 5M15.5 5.5 14 8"/></svg>
+        {{ p.label }}
+        <span v-if="p.key==='wechat'" class="pp-plat-w">677px</span>
+      </button>
+      <span class="footer-spacer"></span>
+      <span class="pp-plat-tip">切换后版心宽度将平滑过渡</span><!-- TODO(i18n) -->
+      <button class="pp-plat-copy" :class="'plat-' + platKey" :title="'复制' + activePlat.label + '排版 (⌘⇧C)'" @click="onCopyCurrentPlatform">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        复制 <span style="font-family:var(--skin-font-mono); font-size:9.5px; opacity:.7">⌘⇧C</span><!-- TODO(i18n) -->
+      </button>
+    </div>
+
+    <!-- 预览模式切换工具栏（native 现状保留；workbench 下隐藏，由平台 tab 条取代） -->
+    <div v-if="skin !== 'workbench'" class="preview-toolbar">
       <div class="preview-mode-selector">
         <label class="mode-label">预览模式:</label>
         <div class="mode-buttons">
@@ -33,23 +61,25 @@
       </div>
     </div>
 
-    <!-- 预览容器 -->
-    <div class="preview-container" :class="['preview-container', `viewport-${currentViewportMode}`, `theme-system-${currentLayoutId}`]">
+    <!-- 预览容器：--pp-plat-* 由激活平台驱动（版心宽度 + 文章强调色一起变） -->
+    <div class="preview-container" :class="['preview-container', `viewport-${currentViewportMode}`, `theme-system-${currentLayoutId}`]"
+         :style="skin === 'workbench' ? { '--pp-plat-max': activePlat.maxWidth, '--pp-plat-accent': activePlat.accent, '--pp-plat-accent-rgb': activePlat.accentRgb } : null">
       <!-- 渲染预览模式 -->
       <div ref="previewContent"
            class="preview-rendered markdown-body modern-markdown"
            :class="getPreviewClasses()"
            @scroll="handleScroll"
-           v-html="renderedHtml">
+           v-html="displayHtml">
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { parseMarkdown } from '../core/markdown/parser/coordinator.js'
 import { useGlobalThemeManager } from '../composables/index.js'
+import { copySocialFormat } from '../core/editor/copy-formats.js'
 import { escapeHtml as sharedEscapeHtml } from '../shared/utils/text.js'
 // mermaid 按需动态加载（仅文档含 .mermaid 块时引入），不阻塞首屏
 
@@ -125,9 +155,23 @@ export default {
     syncScrollEnabled: {
       type: Boolean,
       default: true
+    },
+    // ===== UI 皮肤（task-8）：workbench 下显示三平台 tab，native 保持现状 =====
+    skin: {
+      type: String,
+      default: 'native'
+    },
+    activePlatform: {
+      type: String,
+      default: 'wechat'
+    },
+    // 外部平台切换请求（⌘1/2/3、顶栏 CTA split），watch 后应用到内部状态
+    platformRequest: {
+      type: String,
+      default: ''
     }
   },
-  emits: ['html-generated'],
+  emits: ['html-generated', 'platform-change'],
   setup(props, { emit }) {
     // 使用统一主题管理器
     const themeManager = useGlobalThemeManager()
@@ -147,6 +191,100 @@ export default {
     const currentViewportMode = ref('desktop')
     const scrollPosition = ref(0)
     // 移除多余的变量声明，现在在滚动时实时获取
+
+    // ==========================================
+    // workbench 皮肤 · 三平台预览 tab（task-8）
+    // - 版心宽度：公众号 677px / 小红书 360px / 知乎自适应（none）。
+    // - 激活平台的 formatted HTML 喂进渲染：复用现有 socialFormatted 逻辑
+    //   （parseMarkdown 不带 isPreview = 公众号内联样式排版路径），
+    //   emit('html-generated') 机制不动。native 皮肤完全不走此分支。
+    // - 文章强调色经 --pp-plat-accent 变量与版心宽度一起切换（见模板）。
+    // ==========================================
+    const PLATFORM_TABS = [
+      { key: 'wechat', label: '公众号', maxWidth: '677px', accent: '#07C160', accentRgb: '7, 193, 96' },   // TODO(i18n)
+      { key: 'xiaohongshu', label: '小红书', maxWidth: '360px', accent: '#FF2442', accentRgb: '255, 36, 66' },
+      { key: 'zhihu', label: '知乎', maxWidth: 'none', accent: '#0084FF', accentRgb: '0, 132, 255' }
+    ]
+    const platKey = ref(PLATFORM_TABS.some((p) => p.key === props.activePlatform) ? props.activePlatform : 'wechat')
+    const activePlat = computed(() => PLATFORM_TABS.find((p) => p.key === platKey.value) || PLATFORM_TABS[0])
+    const platformHtml = ref('')
+    let platformHtmlTimer = null
+
+    function refreshPlatformHtml() {
+      clearTimeout(platformHtmlTimer)
+      if (!props.markdown) { platformHtml.value = ''; return }
+      platformHtmlTimer = setTimeout(async () => {
+        try {
+          const effectiveTheme = getCurrentTheme()
+          // 与 processMarkdown 尾部 socialFormatted 同参（isPreview=false）→ 平台排版 HTML
+          platformHtml.value = parseMarkdown(props.markdown, {
+            theme: effectiveTheme,
+            codeTheme: currentCodeStyle.value,
+            themeSystem: currentLayoutId.value,
+            fontSettings: currentFontSettings.value
+          })
+        } catch (e) {
+          console.warn('平台排版 HTML 生成失败:', e)
+        }
+      }, 150)
+    }
+    function applyPlatform(key) {
+      platKey.value = key
+      emit('platform-change', key)
+      refreshPlatformHtml()
+    }
+    function selectPlatform(key) {
+      if (platKey.value === key) return
+      saveScrollPosition()
+      applyPlatform(key)
+      // 版心宽度平滑过渡后恢复滚动比例
+      if (previewContent.value) {
+        previewContent.value.classList.add('viewport-transitioning')
+        setTimeout(() => {
+          if (previewContent.value) {
+            previewContent.value.classList.remove('viewport-transitioning')
+            restoreScrollPosition()
+          }
+        }, 300)
+      }
+    }
+    // 外部请求（⌘1/2/3、顶栏 CTA split）→ 内部应用
+    watch(() => props.platformRequest, (v) => {
+      if (v && v !== platKey.value && PLATFORM_TABS.some((p) => p.key === v)) selectPlatform(v)
+    })
+    // App 层状态回同步（初始化/恢复场景）
+    watch(() => props.activePlatform, (v) => {
+      if (v && v !== platKey.value && PLATFORM_TABS.some((p) => p.key === v)) applyPlatform(v)
+    })
+
+    // 实际渲染内容：workbench → 平台 formatted HTML（未就绪时回落通用预览，避免空白）
+    const displayHtml = computed(() =>
+      props.skin === 'workbench' && platformHtml.value ? platformHtml.value : renderedHtml.value
+    )
+
+    // 平台复制按钮（顶栏 ⌘⇧C 也经 .pp-plat-copy 命中此处）：
+    // 走既有 copySocialFormat 通道 + toast 通知（不新增 App↔组件信号面）
+    const onCopyCurrentPlatform = async () => {
+      if (!props.markdown || !props.markdown.trim()) {
+        window.dispatchEvent(new CustomEvent('weditor-skin-toast', { detail: { message: '请先编辑内容', type: 'warning' } })) // TODO(i18n)
+        return
+      }
+      try {
+        const result = await copySocialFormat(props.markdown, {
+          theme: getCurrentTheme(),
+          codeTheme: currentCodeStyle.value,
+          themeSystem: currentLayoutId.value,
+          fontSettings: currentFontSettings.value
+        })
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('weditor-skin-toast', {
+            detail: { message: result.message, type: result.success ? 'success' : 'error' }
+          }))
+        }, 50)
+      } catch (e) {
+        window.dispatchEvent(new CustomEvent('weditor-skin-toast', { detail: { message: `复制失败：${e.message}`, type: 'error' } })) // TODO(i18n)
+      }
+    }
 
     // 预览模式配置
     const viewportModes = [
@@ -432,6 +570,9 @@ export default {
         })
         socialHtml.value = socialFormatted
         emit('html-generated', socialFormatted)
+
+        // workbench：平台 formatted HTML 与主题保持同步（platformHtml 未初始化时首刷）
+        if (props.skin === 'workbench') refreshPlatformHtml()
       } catch (error) {
         console.error('处理Markdown时出错:', error)
         const safeMsg = (error && error.message) ? sharedEscapeHtml(String(error.message)) : '未知错误'
@@ -489,11 +630,15 @@ export default {
       // 初始化完成后立即处理markdown
       processMarkdown()
 
+      // workbench：首刷平台 formatted HTML（processMarkdown 尾部也会刷，这里覆盖空内容场景）
+      if (props.skin === 'workbench') refreshPlatformHtml()
+
       // 监听自定义主题变化事件
       window.addEventListener('custom-theme-changed', handleCustomThemeChange)
     })
 
     onUnmounted(() => {
+      clearTimeout(platformHtmlTimer)
       // 清理mermaid渲染的DOM元素，防止内存泄漏
       const containerEl = document.querySelector('.preview-rendered')
       if (containerEl) {
@@ -513,9 +658,109 @@ export default {
       getCurrentModeInfo,
       getPreviewClasses,
       handleScroll,
-      currentLayoutId
+      currentLayoutId,
+      // ===== workbench 平台 tab =====
+      PLATFORM_TABS,
+      platKey,
+      activePlat,
+      displayHtml,
+      selectPlatform,
+      onCopyCurrentPlatform
     }
   }
 }
 </script>
 
+
+<style scoped>
+/* ============================================================
+   workbench 平台 tab 条 + 版心/强调色联动（task-8）
+   ============================================================ */
+.pp-plat-bar {
+  height: 38px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 4px;
+  border-bottom: 1px solid var(--border-hairline);
+}
+.pp-plat-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-right: 8px;
+}
+.pp-plat-tab {
+  height: 26px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  cursor: default;
+  transition: color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+}
+.pp-plat-tab.plat-wechat:hover { color: var(--plat-wx); background: rgba(7, 193, 96, 0.08); }
+.pp-plat-tab.plat-xiaohongshu:hover { color: var(--plat-xhs); background: rgba(255, 36, 66, 0.08); }
+.pp-plat-tab.plat-zhihu:hover { color: var(--plat-zh); background: rgba(0, 132, 255, 0.08); }
+.pp-plat-tab.active.plat-wechat {
+  color: var(--plat-wx);
+  font-weight: 600;
+  background: rgba(7, 193, 96, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(7, 193, 96, 0.5), 0 0 14px rgba(7, 193, 96, 0.18);
+}
+.pp-plat-tab.active.plat-xiaohongshu {
+  color: var(--plat-xhs);
+  font-weight: 600;
+  background: rgba(255, 36, 66, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(255, 36, 66, 0.5), 0 0 14px rgba(255, 36, 66, 0.16);
+}
+.pp-plat-tab.active.plat-zhihu {
+  color: var(--plat-zh);
+  font-weight: 600;
+  background: rgba(0, 132, 255, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(0, 132, 255, 0.5), 0 0 14px rgba(0, 132, 255, 0.16);
+}
+.pp-plat-w { font-size: 9px; font-family: var(--skin-font-mono); opacity: 0.7; }
+.pp-plat-tip { font-size: 10px; color: var(--text-tertiary); margin-right: 8px; white-space: nowrap; }
+.pp-plat-copy {
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: default;
+  color: var(--pp-plat-accent, var(--plat-wx));
+  background: rgba(var(--pp-plat-accent-rgb, 7, 193, 96), 0.12);
+  box-shadow: inset 0 0 0 1px rgba(var(--pp-plat-accent-rgb, 7, 193, 96), 0.45);
+  transition: filter 180ms ease;
+  flex: none;
+}
+.pp-plat-copy:hover { filter: brightness(1.15); }
+
+/* 版心宽度按激活平台切换：公众号 677px / 小红书 360px / 知乎自适应。
+   !important 压过 preview-pane.css 的 viewport-desktop .preview-rendered{max-width:760px} */
+.preview-container :deep(.preview-rendered) {
+  max-width: var(--pp-plat-max, none) !important;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  transition: max-width 300ms ease;
+}
+/* 平台强调色经由 --pp-plat-accent 暴露给皮肤层与未来扩展；
+   formatted HTML 自带行内强调样式，此处不再覆盖文章着色。 */
+</style>

@@ -1,0 +1,247 @@
+/* ============================================================
+   皮肤 · workbench（Raycast 创作者工作台）chrome 覆盖层
+   - 深蓝黑 #0D1117→#161B22，violet #7C5CFC 强调
+   - 64px icon rail + 280px 文档库面板 + 38px 文档 tab 条
+   - chrome 旧组件暗色适配；markdown 预览排版仍由主题系统控制
+     （--theme-* 由主题管理器 inline 动态覆盖，本文件仅在无内联值时
+      提供 dark 兜底，保证 chrome 区域可读）。
+   ============================================================ */
+
+html[data-skin="workbench"] body { background: #05070B; }
+
+#app[data-skin="workbench"] { background: var(--app-bg); color: var(--text-primary); font-family: var(--skin-font-ui); }
+
+/* ---------- workbench 标题栏（topbar 复用 .skin-toolbar 结构） ---------- */
+html[data-skin="workbench"] .skin-toolbar { padding: 0 16px; gap: 12px; }
+/* 红绿灯避让：macOS 原生按钮浮于左上，此处留白兼作拖拽区起点 */
+html[data-skin="workbench"] .skin-traffic-gap { width: 62px; }
+
+.wb-brand { display: flex; align-items: center; gap: 8px; min-width: 0; flex: none; }
+.wb-logo {
+  width: 22px; height: 22px; border-radius: 6px; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #8D72FF, #5B3FD6);
+  box-shadow: var(--glow-violet);
+}
+.wb-brand-name { font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; }
+.wb-brand-dash { font-size: 11px; color: var(--text-tertiary); flex: none; }
+.wb-brand-file {
+  font-size: 13px; color: var(--text-secondary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px;
+}
+.wb-doc-dirty {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex: none;
+}
+
+/* 顶栏右侧控件 */
+.wb-sync-toggle {
+  display: flex; align-items: center; gap: 6px; flex: none; cursor: default;
+  font-size: 11px; color: var(--text-secondary);
+  -webkit-app-region: no-drag; app-region: no-drag;
+}
+.wb-switch {
+  width: 26px; height: 15px; border-radius: 999px; position: relative; flex: none;
+  background: rgba(var(--plat-accent-rgb), 0.35);
+  box-shadow: inset 0 0 0 1px rgba(var(--plat-accent-rgb), 0.6);
+  transition: background var(--skin-transition);
+}
+.wb-switch::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 11px; height: 11px; border-radius: 50%;
+  background: var(--plat-accent);
+  box-shadow: 0 0 8px rgba(var(--plat-accent-rgb), 0.8);
+  transition: transform var(--skin-transition);
+}
+.wb-switch.on::after { transform: translateX(11px); }
+.wb-switch:not(.on) { background: rgba(110, 118, 129, 0.25); box-shadow: inset 0 0 0 1px rgba(240, 246, 252, 0.12); }
+.wb-switch:not(.on)::after { background: #6E7681; box-shadow: none; }
+
+/* ⌘K 命令面板入口（本次仅占位按钮，不实现面板） */
+.cmdk-btn {
+  height: 30px; padding: 0 10px; border-radius: 8px; border: 0;
+  display: flex; align-items: center; gap: 8px;
+  font: inherit; font-size: 11px; color: var(--text-secondary);
+  background: rgba(1, 4, 9, 0.4); box-shadow: var(--tb-shadow); cursor: default;
+  flex: none;
+}
+.cmdk-btn:hover { background: var(--surface-raised); color: var(--text-primary); }
+.cmdk-btn kbd {
+  font-family: var(--skin-font-mono); font-size: 10px; line-height: 1;
+  padding: 3px 5px; border-radius: 5px; color: var(--text-secondary);
+  background: rgba(110, 118, 129, 0.15); box-shadow: inset 0 0 0 1px rgba(240, 246, 252, 0.1);
+}
+
+/* 主 CTA：复制排版（大号，颜色跟随当前平台语境 --plat-accent） */
+.wb-cta {
+  display: flex; align-items: center; flex: none; margin-left: 4px;
+  -webkit-app-region: no-drag; app-region: no-drag;
+}
+.wb-cta-main {
+  height: 34px; padding: 0 16px 0 12px; border-radius: 9px 0 0 9px; border: 0;
+  display: flex; align-items: center; gap: 8px;
+  font: inherit; font-size: 13px; font-weight: 600; color: #fff; cursor: default;
+  background: var(--plat-accent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--plat-accent) 78%, white), var(--plat-accent));
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.3), 0 4px 16px -4px rgba(var(--plat-accent-rgb), 0.6);
+  transition: filter var(--skin-transition);
+}
+.wb-cta-main:hover { filter: brightness(1.1); }
+.wb-cta-main:disabled { opacity: 0.45; pointer-events: none; }
+.wb-cta-main .wb-cta-kbd { font-size: 10px; font-weight: 500; opacity: 0.8; margin-left: 2px; }
+.wb-cta-split {
+  height: 34px; width: 30px; border-radius: 0 9px 9px 0; border: 0; margin-left: -1px;
+  display: flex; align-items: center; justify-content: center; color: #fff; cursor: default;
+  background: linear-gradient(180deg, var(--plat-accent), color-mix(in srgb, var(--plat-accent) 82%, black));
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.3), 0 4px 16px -4px rgba(var(--plat-accent-rgb), 0.6),
+              inset 1px 0 0 rgba(0, 0, 0, 0.2);
+  transition: filter var(--skin-transition);
+}
+.wb-cta-split:hover { filter: brightness(1.1); }
+
+/* ---------- 中央工作区（编辑 | 预览）在 workbench 下的 chrome 修正 ---------- */
+html[data-skin="workbench"] .app-main {
+  background: transparent;          /* 渐变材质由 #app 承担 */
+  gap: 0;
+  padding: 0;
+}
+html[data-skin="workbench"] .editor-panel,
+html[data-skin="workbench"] .preview-panel {
+  background: var(--formatbar-bg);
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  min-width: 0;
+}
+html[data-skin="workbench"] .editor-panel:hover,
+html[data-skin="workbench"] .preview-panel:hover {
+  transform: none; box-shadow: none;
+}
+html[data-skin="workbench"] .editor-panel { animation: none; }
+html[data-skin="workbench"] .preview-panel { animation: none; box-shadow: inset -1px 0 0 var(--grid-line); }
+html[data-skin="workbench"] .panel-header {
+  height: 38px; padding: 0 10px 0 10px;
+  background: transparent;
+  border-bottom: 1px solid var(--border-hairline);
+  -webkit-app-region: no-drag; app-region: no-drag;
+}
+html[data-skin="workbench"] .panel-header::before { display: none; }
+html[data-skin="workbench"] .panel-header h3 {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-tertiary); gap: 6px;
+}
+html[data-skin="workbench"] .panel-header h3::before { display: none; }
+html[data-skin="workbench"] .panel-header h3 svg { width: 13px; height: 13px; }
+html[data-skin="workbench"] .btn-small {
+  width: 26px; height: 26px; border-radius: 6px;
+  background: transparent; border: none; box-shadow: none;
+  color: var(--text-secondary);
+}
+html[data-skin="workbench"] .btn-small:hover {
+  background: var(--surface-raised); color: var(--text-primary); transform: none; box-shadow: none;
+}
+html[data-skin="workbench"] .btn-small svg { width: 13px; height: 13px; }
+html[data-skin="workbench"] .toggle-label { color: var(--text-secondary); }
+html[data-skin="workbench"] .toggle-slider { background: rgba(110, 118, 129, 0.35); }
+html[data-skin="workbench"] .wysiwyg-warming-badge {
+  background: var(--surface-solid); border-color: var(--border-hairline); color: var(--text-secondary);
+}
+
+/* 预览画布衬底（灰底 + 纸张感由 PreviewPane platform tab 控制版心） */
+html[data-skin="workbench"] .preview-container { background: var(--canvas-bg); }
+html[data-skin="workbench"] .preview-pane { background: var(--surface); }
+
+/* ---------- footer 状态条：并入底部深色条 ---------- */
+html[data-skin="workbench"] .app-footer {
+  height: var(--skin-footer-h);
+  padding: 0 12px; gap: 16px;
+  display: flex; align-items: center;
+  background: var(--footer-bg);
+  box-shadow: inset 0 1px 0 var(--grid-line);
+  border-top: none;
+  font-size: 10.5px; color: var(--text-tertiary);
+}
+html[data-skin="workbench"] .app-footer::before { display: none; }
+html[data-skin="workbench"] .app-footer .stat-item {
+  font-size: 10.5px; font-weight: 400; gap: 6px; color: var(--text-tertiary);
+  font-family: var(--skin-font-mono);
+}
+html[data-skin="workbench"] .app-footer .stat-item svg { width: 10px; height: 10px; }
+html[data-skin="workbench"] .app-footer .stat-item:hover { color: var(--text-secondary); transform: none; }
+html[data-skin="workbench"] .app-footer .footer-left { gap: 16px; }
+
+/* ---------- 旧竖栏 AppHeader 在 workbench 下隐藏（rail 取代其导航职能） ---------- */
+html[data-skin="workbench"] .app-header.vertical { display: none; }
+
+/* ---------- 全局 chrome 暗色兜底 ----------
+   主题管理器会给 --theme-bg-xxx / --theme-text-xxx 写 inline 值（用户颜色主题），
+   inline 优先级高于这里 —— 这是有意为之：预览内容排版属于主题系统。
+   chrome 组件大多改用 --text-primary/--surface 等 skin token，不受影响。
+   此处仅兜底少数仍引用旧变量的非内联场景（如未初始化瞬间）。        */
+/* ---------- workbench hairline 半像素语言：用内阴影描边替代真边框 ---------- */
+html[data-skin="workbench"] .dropdown-menu {
+  background: var(--menu-bg);
+  -webkit-backdrop-filter: var(--menu-blur);
+  backdrop-filter: var(--menu-blur);
+  border-color: var(--border-hairline-strong);
+  color: var(--text-primary);
+}
+
+/* ============================================================
+   workbench 下「编辑器输入面」暗色适配（task-8：皮肤只改 chrome，
+   markdown 内容排版仍由主题系统控制）。CodeMirror DOM 无组件 scope
+   属性限制问题——本文件为全局样式，直接后代选择即可命中。
+   !important 压过 codemirror base theme 注入的 .cm-editor/.cm-gutters。
+   ============================================================ */
+html[data-skin="workbench"] .markdown-editor { background-color: #0D1117; }
+html[data-skin="workbench"] .editor-container { background: #0D1117 !important; }
+html[data-skin="workbench"] .editor-toolbar {
+  background-color: rgba(22, 27, 34, 0.6);
+  border-bottom-color: var(--border-hairline);
+}
+html[data-skin="workbench"] .toolbar-btn { color: var(--text-secondary); }
+html[data-skin="workbench"] .toolbar-btn:hover { color: var(--text-primary); background: var(--surface-raised); }
+html[data-skin="workbench"] .mode-buttons { background: rgba(1, 4, 9, 0.55); box-shadow: inset 0 0 0 1px var(--grid-line); }
+html[data-skin="workbench"] .mode-btn { color: var(--text-tertiary); }
+html[data-skin="workbench"] .mode-btn.active {
+  background: linear-gradient(180deg, rgba(124, 92, 252, 0.32), rgba(124, 92, 252, 0.18));
+  color: var(--text-primary);
+  box-shadow: var(--glow-violet);
+}
+
+/* CodeMirror 表面 */
+html[data-skin="workbench"] .markdown-editor .cm-editor { background: #0D1117 !important; color: var(--text-primary) !important; }
+html[data-skin="workbench"] .markdown-editor .cm-gutters { background: #0D1117 !important; color: #3D444D !important; border-right: none; }
+html[data-skin="workbench"] .markdown-editor .cm-activeLine { background: rgba(124, 92, 252, 0.08) !important; }
+html[data-skin="workbench"] .markdown-editor .cm-activeLineGutter { background: rgba(124, 92, 252, 0.12) !important; }
+html[data-skin="workbench"] .markdown-editor .cm-selectionBackground,
+html[data-skin="workbench"] .markdown-editor .cm-focused .cm-selectionBackground,
+html[data-skin="workbench"] .markdown-editor ::selection { background: rgba(124, 92, 252, 0.30) !important; }
+html[data-skin="workbench"] .markdown-editor .cm-cursor { border-left-color: var(--accent); }
+
+/* markdown mode tokens 在 dark 下的可读性修正（强调色仍走主题 token） */
+html[data-skin="workbench"] .markdown-editor .cm-header-1,
+html[data-skin="workbench"] .markdown-editor .cm-header-2 { color: #B9A7FF; }
+html[data-skin="workbench"] .markdown-editor .cm-strong { color: var(--text-primary); }
+html[data-skin="workbench"] .markdown-editor .cm-quote { color: var(--text-secondary); }
+html[data-skin="workbench"] .markdown-editor .cm-comment { color: var(--text-tertiary); }
+html[data-skin="workbench"] .markdown-editor .cm-link { color: var(--plat-zh); }
+
+/* 回落态（platformHtml 未就绪时的 isPreview DOM）在深色面板上可读：
+   主题系统的白色纸张材质保留，文字走主题 token；若用户颜色主题为浅色，
+   白底黑字依旧成立——因此这里只处理"无背景声明"的兜底场景。 */
+html[data-skin="workbench"] .preview-rendered.markdown-body:not(.theme-system-default),
+html[data-skin="workbench"] .preview-pane.is-workbench .preview-container { background: transparent; }
+
+/* 编辑器工具栏按钮（旧拟物灰底在深色下过曝） */
+html[data-skin="workbench"] .toolbar-btn {
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-secondary);
+}
+html[data-skin="workbench"] .toolbar-btn:hover {
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  box-shadow: none;
+  transform: none;
+}
+html[data-skin="workbench"] .toolbar-divider { background: var(--border-hairline); }

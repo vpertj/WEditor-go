@@ -77,6 +77,7 @@
     "nav": {
       "quick": "快速导航",
       "general": "通用",
+      "skin": "界面风格",
       "themeSystem": "主题系统",
       "colorTheme": "主题色",
       "codeStyle": "代码样式",
@@ -84,6 +85,20 @@
       "fontSize": "字号",
       "spacing": "间距",
       "updates": "自动更新"
+    },
+    "skin": {
+      "title": "界面风格",
+      "desc": "选择应用的整体外观皮肤。皮肤决定窗口外壳、导航与配色材质，不影响 Markdown 排版主题（两者独立共存）。切换即时生效，无需重启。",
+      "follow": "跟随系统明暗自动切换",
+      "followDesc": "系统深色时自动使用创作者工作台，浅色时回到原生血统",
+      "autoPrefix": "当前映射：",
+      "nativeName": "原生血统",
+      "nativeDesc": "Apple HIG · Xcode vibrancy 材质 · 系统蓝强调",
+      "workbenchName": "创作者工作台",
+      "workbenchDesc": "Raycast 深色 · 图标导航 · 三平台分发",
+      "enableTip": "开启跟随系统明暗",
+      "disableTip": "关闭跟随系统明暗",
+      "appliedToast": "已切换到「{name}」"
     },
     "update": {
       "title": "自动更新",

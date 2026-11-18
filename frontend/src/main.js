@@ -22,6 +22,13 @@ import App from './App.vue';
 // 导入主题预加载器（必须在其他样式之前导入，防止主题闪烁）
 import './core/theme/theme-loader.js';
 
+// UI 皮肤层（task-8）：token/chrome 必须最先于组件样式导入，供 html[data-skin] 选择器接管。
+// 业务 CSS 引用 --skin token；两套皮肤差异在各自覆盖段内。
+import './styles/skins/tokens.css';
+import './styles/skins/base.css';
+import './styles/skins/native.css';
+import './styles/skins/workbench.css';
+
 // 导入全局 CSS
 // `theme-root.css` 定义主题变量与按系统引入
 import './styles/themes/theme-root.css';
@@ -34,6 +41,10 @@ import './styles/prism-variables.css';
 // i18n
 import { i18n } from './plugins/i18n.js'
 
+// 皮肤系统（task-8）：useAppSkin 模块级单例；init() 在挂载后调用
+// （#app 的 :data-skin 绑定要求 DOM 就绪；FOUC 由 theme-loader.js 预写 html[data-skin] 兜底）
+import { useAppSkin } from './composables/useAppSkin.js';
+
 // 创建 Vue 应用实例
 const app = createApp(App);
 
@@ -42,3 +53,6 @@ app.use(i18n)
 
 // 将应用挂载到 DOM 中 ID 为 'app' 的元素上
 app.mount('#app');
+
+// 恢复持久化皮肤 + 注册系统明暗监听 + 同步 <html>/<#app> data-skin
+useAppSkin().init();

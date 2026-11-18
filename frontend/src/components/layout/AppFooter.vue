@@ -27,16 +27,50 @@
       </div>
     </div>
 
+    <!-- ===== UI 皮肤扩展段（task-8）：同步滚动 + 平台快捷切换，两皮肤共用 ===== -->
+    <span class="st-sw" @click="$emit('toggle-sync-scroll')" :title="$t('main.preview.syncScroll')">
+      <span class="nb-switch" :class="{ off: !syncScrollEnabled }"></span>
+      <span>{{ $t('main.preview.syncScroll') }}</span>
+    </span>
+
+    <span class="footer-spacer"></span>
+
+    <template v-if="showPlatformLinks">
+      <span class="st-it" style="padding-right:2px">复制到：</span><!-- TODO(i18n) -->
+      <span
+        v-for="(p, i) in platforms"
+        :key="p.key"
+        class="plat-link"
+        :class="{ active: activePlatform === p.key }"
+        :style="activePlatform === p.key ? {} : { color: 'var(--text-tertiary)' }"
+        @click="$emit('select-platform', p.key)"
+      >{{ p.label }}<span v-if="i < platforms.length - 1" class="st-dot" style="margin:0 6px; display:inline-block; vertical-align:middle"></span></span>
+      <span class="st-dot" style="margin:0 9px"></span>
+      <span class="st-it" style="color: var(--text-tertiary)">⌘⇧C 快速复制</span><!-- TODO(i18n) -->
+    </template>
   </footer>
 </template>
 
 <script setup>
-const props = defineProps({
+defineProps({
   characterCount: { type: Number, required: true },
   lineCount: { type: Number, required: true },
   wordCount: { type: Number, required: true },
   estimatedReadTime: { type: Number, required: true },
+  syncScrollEnabled: { type: Boolean, default: true },
+  // native：状态条展示三平台快捷切换；workbench：顶栏 CTA 已承担，关不掉旧结构也不显示
+  showPlatformLinks: { type: Boolean, default: false },
+  activePlatform: { type: String, default: 'wechat' }
 })
+
+defineEmits(['toggle-sync-scroll', 'select-platform'])
+
+// TODO(i18n): 平台名暂用中文字面量（locales 归 task-9）
+const platforms = [
+  { key: 'wechat', label: '公众号' },
+  { key: 'xiaohongshu', label: '小红书' },
+  { key: 'zhihu', label: '知乎' }
+]
 </script>
 
 <style scoped>

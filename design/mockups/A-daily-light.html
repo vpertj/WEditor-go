@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>WEditor · A. 日常明亮 — Linear/Vault 式工作台式</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: { extend: { colors: {
+    paper:'#FAFAF8', panel:'#FFFFFF', ink:'#1F2328', soft:'#6E7781',
+    accent:'#5B5BD6', accentsoft:'#EEF0FB', line:'#E8E8E4', line2:'#D9D9D3'
+  }}}
+}
+</script>
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; width:1440px; height:900px; overflow:hidden; background:#EFEFEA;
+         font-family:'Inter', -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+         color:#1F2328; -webkit-font-smoothing:antialiased; }
+  .mono { font-family:'JetBrains Mono', ui-monospace, monospace; }
+
+  /* macOS hairline */
+  .hair-b { position:relative; }
+  .hair-b::after { content:''; position:absolute; left:0; right:0; bottom:0; height:1px;
+                   background:#E3E3DE; transform:scaleY(.5); transform-origin:bottom; }
+  .hair-t { position:relative; }
+  .hair-t::before { content:''; position:absolute; left:0; right:0; top:0; height:1px;
+                    background:#E3E3DE; transform:scaleY(.5); transform-origin:top; }
+  .hair-r { position:relative; }
+  .hair-r::after { content:''; position:absolute; top:0; bottom:0; right:0; width:1px;
+                   background:#E3E3DE; transform:scaleX(.5); transform-origin:right; }
+  .ring-acc:focus-within { box-shadow:0 0 0 2px #5B5BD6; }
+
+  /* scrollbars */
+  ::-webkit-scrollbar { width:9px; height:9px; }
+  ::-webkit-scrollbar-thumb { background:rgba(31,35,40,.16); border-radius:5px; border:2px solid transparent; background-clip:padding-box; }
+  ::-webkit-scrollbar-thumb:hover { background-color:rgba(31,35,40,.3); }
+  ::-webkit-scrollbar-track { background:transparent; }
+
+  kbd { display:inline-flex; align-items:center; justify-content:center; min-width:17px; height:17px; padding:0 4px;
+        font-size:10.5px; line-height:1; font-family:'Inter',sans-serif; color:#6E7781;
+        background:#F6F6F3; border:1px solid #DFDFDA; border-bottom-width:2px; border-radius:4px; }
+
+  /* segmented control */
+  .seg { position:relative; display:flex; gap:2px; padding:2px; background:#F1F1ED; border-radius:8px;
+         box-shadow:inset 0 0 0 1px rgba(31,35,40,.05); }
+  .seg button { position:relative; z-index:1; height:26px; padding:0 14px; font-size:12.5px; font-weight:500;
+                color:#6E7781; border:0; background:transparent; border-radius:6px; cursor:default; white-space:nowrap; }
+  .seg button:hover { color:#1F2328; }
+  .seg button.on { color:#fff; background:#5B5BD6; box-shadow:0 1px 2px rgba(91,91,214,.35); }
+
+  .btn { display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 12px; border-radius:8px;
+         font-size:12.5px; font-weight:500; cursor:default; white-space:nowrap; }
+  .btn-primary { background:#5B5BD6; color:#fff; box-shadow:0 1px 2px rgba(91,91,214,.4), inset 0 1px 0 rgba(255,255,255,.18); }
+  .btn-primary:hover { background:#4f4fc9; }
+  .btn-ghost { color:#6E7781; }
+  .btn-ghost:hover { background:#EEF0FB; color:#1F2328; }
+
+  .iconbtn { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:7px; color:#6E7781; }
+  .iconbtn:hover { background:#EEF0FB; color:#1F2328; }
+
+  /* sidebar items */
+  .nav-item { display:flex; align-items:center; gap:8px; height:26px; padding:0 8px; margin:0 8px; border-radius:6px;
+              font-size:12.5px; color:#4b5563; cursor:default; }
+  .nav-item:hover { background:#EEF0FB; }
+  .nav-item.sel { background:#EEF0FB; color:#1F2328; font-weight:500; box-shadow:inset 0 0 0 1px rgba(91,91,214,.22); }
+  .nav-head { display:flex; align-items:center; gap:6px; height:22px; padding:0 16px; margin-top:10px;
+              font-size:10.5px; font-weight:600; letter-spacing:.06em; color:#9aa1ab; text-transform:uppercase; }
+
+  /* toolbar format buttons */
+  .tb { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:6px; color:#6E7781; font-size:13px; }
+  .tb:hover { background:#EEF0FB; color:#1F2328; }
+
+  /* editor lines */
+  .ed-line { display:flex; min-height:21px; line-height:21px; font-size:12.5px; }
+  .ed-no { flex:0 0 34px; text-align:right; padding-right:12px; color:#C7CCD2; user-select:none; font-size:11.5px; }
+  .tok-h { color:#5B5BD6; font-weight:600; }
+  .tok-mk { color:#B4BBC4; }
+  .tok-b { font-weight:700; color:#1F2328; }
+  .tok-code { color:#8250DF; }
+  .tok-quote { color:#6E7781; }
+  .caret { display:inline-block; width:1.5px; height:15px; background:#5B5BD6; vertical-align:-2px; animation:blink 1.1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity:0; } }
+
+  /* rendered preview typography */
+  .doc h1 { font-size:26px; font-weight:700; letter-spacing:-.01em; margin:0 0 4px; }
+  .doc p { font-size:14.5px; line-height:1.85; margin:12px 0; color:#2b3138; }
+  .doc blockquote { margin:16px 0; padding:10px 16px; background:#FAFAF8; border-left:3px solid #5B5BD6;
+                    border-radius:0 8px 8px 0; color:#5a626b; font-size:14px; line-height:1.8; }
+  .doc ul { margin:10px 0; padding-left:22px; }
+  .doc li { font-size:14.5px; line-height:1.85; color:#2b3138; margin:4px 0; }
+  .doc hr { border:0; border-top:1px solid #E8E8E4; margin:22px 0; }
+  .doc table { width:100%; border-collapse:collapse; font-size:13.5px; margin:14px 0; }
+  .doc th { text-align:left; font-weight:600; color:#1F2328; background:#F6F6F3; padding:7px 12px; border:1px solid #E8E8E4; }
+  .doc td { padding:7px 12px; border:1px solid #E8E8E4; color:#2b3138; }
+  .doc code.inl { font-family:'JetBrains Mono',monospace; font-size:12.5px; background:#EEF0FB; color:#4b4bb8; padding:1.5px 6px; border-radius:5px; }
+  .doc a { color:#5B5BD6; text-decoration:none; border-bottom:1px solid rgba(91,91,214,.35); }
+
+  .cb { border-radius:10px; background:#FCFCFA; overflow:hidden; box-shadow:inset 0 0 0 1px #E8E8E4; margin:16px 0; }
+  .cb-head { display:flex; align-items:center; justify-content:space-between; height:30px; padding:0 12px; background:#F6F6F3; }
+  .cb-body { padding:12px 14px; font-family:'JetBrains Mono',monospace; font-size:12px; line-height:1.75; color:#1F2328; overflow-x:auto; }
+  .c-key{color:#CF222E;} .c-str{color:#0A3069;} .c-com{color:#8b949e;font-style:italic;} .c-fn{color:#8250DF;} .c-num{color:#0550AE;}
+
+  /* mermaid */
+  .mm { border-radius:10px; background:#FCFCFA; box-shadow:inset 0 0 0 1px #E8E8E4; padding:14px 10px 10px; margin:16px 0; }
+  .mm-node { display:flex; align-items:center; justify-content:center; height:34px; padding:0 14px; font-size:12.5px;
+             background:#fff; border:1.5px solid #5B5BD6; border-radius:8px; color:#1F2328; box-shadow:0 1px 2px rgba(31,35,40,.06); }
+  .mm-edge { stroke:#B9BDD4; stroke-width:1.5; fill:none; marker-end:url(#arw); }
+
+  /* tooltip (hover detail demo) */
+  .tip { position:relative; }
+  .tip:hover > .tipbox { opacity:1; transform:translateY(0); pointer-events:auto; }
+  .tipbox { position:absolute; top:calc(100% + 7px); left:50%; transform:translate(-6px,4px); opacity:0; transition:all .12s ease;
+            z-index:60; white-space:nowrap; background:#26292E; color:#EDEFF2; font-size:11.5px; padding:5px 9px; border-radius:6px;
+            box-shadow:0 6px 18px rgba(0,0,0,.22); }
+  .tipbox::before { content:''; position:absolute; bottom:100%; left:12px; border:5px solid transparent; border-bottom-color:#26292E; }
+
+  /* dropdown menu */
+  .menu { position:absolute; z-index:50; background:#fff; border-radius:10px; padding:5px; min-width:224px;
+          box-shadow:0 0 0 1px rgba(31,35,40,.09), 0 12px 32px rgba(31,35,40,.14); }
+  .mi { display:flex; align-items:center; gap:8px; height:28px; padding:0 8px 0 9px; border-radius:6px; font-size:12.5px; color:#1F2328; }
+  .mi .sc { margin-left:auto; display:flex; gap:4px; }
+  .mi:hover, .mi.hl { background:#5B5BD6; color:#fff; }
+  .mi:hover kbd, .mi.hl kbd { background:rgba(255,255,255,.16); border-color:rgba(255,255,255,.25); color:rgba(255,255,255,.9); }
+  .msep { height:1px; margin:5px 8px; background:#ECECEA; }
+  .mlbl { padding:6px 9px 4px; font-size:10.5px; font-weight:600; letter-spacing:.05em; color:#9aa1ab; }
+
+  .grab { display:flex; align-items:center; justify-content:center; width:1px; background:#E3E3DE; position:relative; }
+  .grab:hover, .grab.act { background:#5B5BD6; }
+  .grab i { position:absolute; width:5px; height:22px; border-radius:3px; background:#D4D4CE; }
+  .grab:hover i, .grab.act i { background:#5B5BD6; }
+
+  .pulse-dot { width:7px; height:7px; border-radius:50%; background:#2EA043; box-shadow:0 0 0 0 rgba(46,160,67,.5); animation:pulse 2s infinite; }
+  @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(46,160,67,.45);} 70%{box-shadow:0 0 0 5px rgba(46,160,67,0);} 100%{box-shadow:0 0 0 0 rgba(46,160,67,0);} }
+
+  .switch { width:28px; height:16px; border-radius:99px; background:#D4D4CE; position:relative; }
+  .switch.on { background:#5B5BD6; }
+  .switch i { position:absolute; top:2px; left:2px; width:12px; height:12px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.2); }
+  .switch.on i { left:auto; right:2px; }
+</style>
+</head>
+<body>
+
+<!-- ===================== mac 窗口壳 ===================== -->
+<div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" style="width:1400px;height:872px;">
+  <div class="w-full h-full bg-panel rounded-[11px] overflow-hidden flex flex-col"
+       style="box-shadow:0 0 0 .5px rgba(31,35,40,.18), 0 30px 70px -18px rgba(31,35,40,.35), 0 8px 24px -10px rgba(31,35,40,.22);">
+
+    <!-- ===================== 顶栏 ===================== -->
+    <header class="relative shrink-0 flex items-center bg-paper hair-b" style="height:46px;">
+
+      <!-- 红绿灯留白区 -->
+      <div class="flex items-center gap-2 pl-[14px] pr-3" style="width:78px;">
+        <span class="w-[12px] h-[12px] rounded-full" style="background:#FF5F57; box-shadow:inset 0 0 0 .5px rgba(0,0,0,.15);"></span>
+        <span class="w-[12px] h-[12px] rounded-full" style="background:#FEBC2E; box-shadow:inset 0 0 0 .5px rgba(0,0,0,.15);"></span>
+        <span class="w-[12px] h-[12px] rounded-full" style="background:#28C840; box-shadow:inset 0 0 0 .5px rgba(0,0,0,.15);"></span>
+      </div>
+
+      <!-- app 名 + 文档标题 -->
+      <div class="flex items-center gap-2 select-none" style="width:322px;">
+        <span class="w-[19px] h-[19px] rounded-[5px] flex items-center justify-center text-white font-bold" style="background:linear-gradient(135deg,#6B6BE0,#5B5BD6); font-size:11px;">W</span>
+        <span class="text-[13px] font-semibold tracking-tight">WEditor</span>
+        <span class="text-line2" style="color:#C7CCD2;">/</span>
+        <span class="text-[12px]" style="color:#6E7781;">排版引擎选型.md</span>
+      </div>
+
+      <!-- 居中分段控件 -->
+      <div class="absolute left-1/2 -translate-x-1/2 tip">
+        <div class="seg">
+          <button class="on">分栏</button>
+          <button>源码</button>
+          <button>排版</button>
+        </div>
+        <div class="tipbox">切换视图模式 &nbsp;<kbd style="background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.25);color:#eee;">⌘</kbd><kbd style="background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.25);color:#eee;">⇧</kbd><kbd style="background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.25);color:#eee;">1</kbd></div>
+      </div>
+
+      <!-- 右侧操作簇 -->
+      <div class="ml-auto flex items-center gap-1.5 pr-3">
+        <!-- 保存状态 -->
+        <span class="flex items-center gap-1.5 text-[11px] mr-1" style="color:#6E7781;">
+          <span class="pulse-dot"></span>已自动保存 12:43
+        </span>
+        <span class="w-px h-4 mx-0.5" style="background:#E3E3DE;"></span>
+
+        <!-- 导出下拉（示意展开态） -->
+        <div class="relative">
+          <button class="btn btn-primary">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+            导出 / 复制
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.8;"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <!-- 展开菜单 -->
+          <div class="menu right-0 mt-2" style="top:34px;">
+            <div class="mlbl">复制为富文本 · ⌘⇧C</div>
+            <div class="mi hl">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="#07C160"><path d="M8.7 4C4.9 4 2 6.6 2 9.8c0 1.8.9 3.4 2.4 4.5l-.6 1.9 2.2-1.1c.6.1 1.2.2 1.8.2h.4A5.7 5.7 0 0 1 8 17.6c0-3.4 3.2-6 7.2-6h.5c-.3-3-3-5.6-7-5.6Z" transform="scale(.9) translate(1 1)"/></svg>
+              粘贴到公众号
+              <span class="sc"><kbd>⌘</kbd><kbd>1</kbd></span>
+            </div>
+            <div class="mi">
+              <svg width="14" height="14" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" fill="#FF2442"/><text x="12" y="15.5" font-size="8" fill="#fff" text-anchor="middle" font-weight="bold" font-family="sans-serif">小</text></svg>
+              粘贴到小红书
+              <span class="sc"><kbd>⌘</kbd><kbd>2</kbd></span>
+            </div>
+            <div class="mi">
+              <svg width="14" height="14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5" fill="#0F6DED"/><text x="12" y="16" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold" font-family="sans-serif">知</text></svg>
+              粘贴到知乎
+              <span class="sc"><kbd>⌘</kbd><kbd>3</kbd></span>
+            </div>
+            <div class="msep"></div>
+            <div class="mi">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m8 8-4 4 4 4"/><path d="m16 8 4 4-4 4"/><path d="m13 5-2 14"/></svg>
+              导出独立 HTML…
+              <span class="sc"><kbd>⌘</kbd><kbd>E</kbd></span>
+            </div>
+            <div class="mi">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V9"/><path d="m7 14 5-5 5 5"/><path d="M4 3h16"/></svg>
+              导入 .md 文件…
+              <span class="sc"><kbd>⌘</kbd><kbd>O</kbd></span>
+            </div>
+            <div class="msep"></div>
+            <div class="mlbl">最近文件</div>
+            <div class="mi"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9aa1ab" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5"/></svg>周报草稿.md</div>
+            <div class="mi"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9aa1ab" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5"/></svg>Markdown 语法指南.md</div>
+          </div>
+        </div>
+
+        <div class="tip">
+          <button class="iconbtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg>
+          </button>
+          <div class="tipbox">命令面板 <kbd style="background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.25);color:#eee;">⌘</kbd><kbd style="background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.25);color:#eee;">K</kbd></div>
+        </div>
+        <div class="tip">
+          <button class="iconbtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H10a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>
+          </button>
+          <div class="tipbox">设置 <kbd style="background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.25);color:#eee;">⌘</kbd><kbd style="background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.25);color:#eee;">,</kbd></div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ===================== 主体三栏 ===================== -->
+    <main class="flex-1 flex min-h-0 bg-paper">
+
+      <!-- ---------- 左细侧栏 240px ---------- -->
+      <aside class="shrink-0 hair-r bg-paper flex flex-col" style="width:240px;">
+        <div class="px-3 pt-3 pb-1 flex items-center gap-2">
+          <div class="flex-1 h-[28px] flex items-center gap-2 px-2 rounded-lg bg-panel" style="box-shadow:inset 0 0 0 1px #E3E3DE;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9aa1ab" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <span class="text-[11.5px]" style="color:#9aa1ab;">搜索文档…</span>
+            <kbd class="ml-auto">⌘K</kbd>
+          </div>
+        </div>
+
+        <div class="nav-head">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          文档库 · WEditor
+        </div>
+        <div class="nav-item sel">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B5BD6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5"/></svg>
+          <span class="truncate">排版引擎选型.md</span>
+          <span class="ml-auto w-1.5 h-1.5 rounded-full bg-accent shrink-0" title="未同步改动"></span>
+        </div>
+        <div class="nav-item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9aa1ab" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5"/></svg>
+          <span class="truncate">发布流水线笔记.md</span>
+        </div>
+        <div class="nav-item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9aa1ab" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5"/></svg>
+          <span class="truncate">周报草稿.md</span>
+        </div>
+
+        <div class="nav-head">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          最近打开
+        </div>
+        <div class="nav-item"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9aa1ab" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="truncate">Markdown 语法指南.md</span><span class="ml-auto text-[10.5px]" style="color:#9aa1ab;">昨天</span></div>
+        <div class="nav-item"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9aa1ab" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="truncate">产品需求 v2.md</span><span class="ml-auto text-[10.5px]" style="color:#9aa1ab;">周一</span></div>
+
+        <div class="nav-head">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          本文大纲
+        </div>
+        <div class="pl-[13px] pr-2 space-y-0.5 mono text-[11px]" style="color:#6E7781;">
+          <div class="flex items-center gap-2 h-[22px] px-2 rounded-md bg-accentsoft" style="color:#4b4bb8;"><span class="w-[1px] h-3 bg-accent rounded"></span>渲染架构</div>
+          <div class="flex items-center gap-2 h-[22px] px-2 rounded-md hover:bg-accentsoft"><span class="indent-2 text-line2"></span>· WKWebView 桥接</div>
+          <div class="flex items-center gap-2 h-[22px] px-2 rounded-md hover:bg-accentsoft"><span class="indent-4 text-line2"></span>· Mermaid 内联化</div>
+          <div class="flex items-center gap-2 h-[22px] px-2 rounded-md hover:bg-accentsoft">平台适配层</div>
+          <div class="flex items-center gap-2 h-[22px] px-2 rounded-md hover:bg-accentsoft">性能数据</div>
+          <div class="flex items-center gap-2 h-[22px] px-2 rounded-md hover:bg-accentsoft">结论与下一步</div>
+        </div>
+
+        <div class="mt-auto hair-t px-3 py-2.5 flex items-center justify-between">
+          <span class="text-[11px]" style="color:#9aa1ab;">4 篇文档 · 本周编辑 12 次</span>
+          <button class="iconbtn !w-[24px] !h-[24px] tip">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            <div class="tipbox">新建文档 <kbd style="background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.25);color:#eee;">⌘N</kbd></div>
+          </button>
+        </div>
+      </aside>
+
+      <!-- ---------- 中编辑区 ---------- -->
+      <section class="flex-1 min-w-0 flex flex-col bg-panel">
+        <!-- 格式工具条 -->
+        <div class="shrink-0 hair-b flex items-center gap-0.5 px-3" style="height:38px; background:#FCFCFA;">
+          <button class="tb mono font-bold" title="加粗 ⌘B">B</button>
+          <button class="tb mono italic" title="斜体 ⌘I">I</button>
+          <button class="tb mono line-through" title="删除线">S</button>
+          <button class="tb mono" title="行内代码 `code`">&lt;/&gt;</button>
+          <span class="w-px h-4 mx-1.5" style="background:#E8E8E4;"></span>
+          <button class="tb text-[11px] font-semibold" title="一级标题 ⌘1">H1</button>
+          <button class="tb text-[11px] font-semibold" title="二级标题 ⌘2">H2</button>
+          <button class="tb text-[11px] font-semibold" title="三级标题 ⌘3">H3</button>
+          <span class="w-px h-4 mx-1.5" style="background:#E8E8E4;"></span>
+          <button class="tb" title="无序列表">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="4.5" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="4.5" cy="18" r="1" fill="currentColor" stroke="none"/></svg>
+          </button>
+          <button class="tb" title="有序列表">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10 6h10M10 12h10M10 18h10"/><text x="2.4" y="8" font-size="6.4" fill="currentColor" stroke="none" font-family="sans-serif">1.</text><text x="2.4" y="14.2" font-size="6.4" fill="currentColor" stroke="none" font-family="sans-serif">2.</text><text x="2.4" y="20.4" font-size="6.4" fill="currentColor" stroke="none" font-family="sans-serif">3.</text></svg>
+          </button>
+          <button class="tb" title="引用块">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 5v14"/><path d="M10 8h9M10 13h9M10 18h6"/></svg>
+          </button>
+          <button class="tb" title="插入链接 ⌘K">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.2 1.1"/><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.2-1.1"/></svg>
+          </button>
+          <button class="tb" title="表格">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M9 5v14M15 5v14"/></svg>
+          </button>
+          <button class="tb" title="代码块">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m8 8-4 4 4 4"/><path d="m16 8 4 4-4 4"/><path d="m13 5-2 14"/></svg>
+          </button>
+          <button class="tb" title="Mermaid 图表">◫</button>
+          <span class="w-px h-4 mx-1.5" style="background:#E8E8E4;"></span>
+          <button class="tb" title="查找替换 ⌘F">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          </button>
+
+          <!-- 右键菜单示意：悬浮于工具条右端，演示桌面习惯 -->
+          <div class="relative ml-auto">
+            <span class="text-[10.5px] px-2 py-1 rounded-md" style="color:#9aa1ab; background:#F1F1ED;">右键任意处 → 快速格式化</span>
+            <div class="menu left-1/2" style="top:26px; min-width:190px;">
+              <div class="mi"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2M9 22h6M12 15v7M4 7h16l-1 5a3 3 0 0 1-3 3h-8a3 3 0 0 1-3-3Z"/></svg>一键规范化全文</div>
+              <div class="mi">选中转为列表<span class="sc"><kbd>⌘</kbd><kbd>L</kbd></span></div>
+              <div class="mi">复制为纯文本<span class="sc"><kbd>⌘</kbd><kbd>⇧</kbd><kbd>C</kbd></span></div>
+              <div class="msep"></div>
+              <div class="mi" style="color:#6E7781;">显示语法指南</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 编辑器正文 -->
+        <div class="flex-1 overflow-y-auto mono px-1 pt-4 pb-6 select-text" style="font-size:12.5px;">
+          <div class="ed-line"><span class="ed-no">1</span><span><span class="tok-mk"># </span><span class="tok-h">排版引擎选型：CodeMirror + WKWebView 双轨制</span></span></div>
+          <div class="ed-line"><span class="ed-no">2</span><span></span></div>
+          <div class="ed-line"><span class="ed-no">3</span><span class="tok-quote">> 目标：一次编写，三平台（公众号 / 小红书 / 知乎）无损粘贴。</span></div>
+          <div class="ed-line"><span class="ed-no">4</span><span></span></div>
+          <div class="ed-line"><span class="ed-no">5</span><span>## 渲染架构</span></div>
+          <div class="ed-line"><span class="ed-no">6</span><span>编辑层用 <span class="tok-code">`CodeMirror 6`</span> 负责语法高亮与增量解析，预览层把 AST 交给原生 <span class="tok-code">`WKWebView`</span> 做离线排版，两端共享同一份 <span class="tok-code">`state.doc`</span>，避免二次序列化。</span></div>
+          <div class="ed-line"><span class="ed-no">7</span><span></span></div>
+          <div class="ed-line"><span class="ed-no">8</span><span>- <span class="tok-b">**零依赖离线**</span>：mermaid 走预打包 UMD，不走 CDN；</span></div>
+          <div class="ed-line"><span class="ed-no">9</span><span>- <span class="tok-b">**流式重排**</span>：输入停顿 120ms 才触发预览刷新；</span></div>
+          <div class="ed-line"><span class="ed-no">10</span><span>- <span class="tok-b">**平台适配层**</span>：针对三个目标站点各自的 CSS 清洗规则。</span></div>
+          <div class="ed-line"><span class="ed-no">11</span><span></span></div>
+          <div class="ed-line"><span class="ed-no">12</span><span>```js</span></div>
+          <div class="ed-line"><span class="ed-no">13</span><span><span class="c-com">// 增量重排：只更新脏区段</span></span></div>
+          <div class="ed-line"><span class="ed-no">14</span><span><span class="c-key">const</span> dirty = doc.patch(prev);</span></div>
+          <div class="ed-line"><span class="ed-no">15</span><span><span class="c-key">if</span> (dirty.length) bridge.post({<span class="c-str">'render'</span>: dirty});</span></div>
+          <div class="ed-line"><span class="ed-no">16</span><span>```</span></div>
+          <div class="ed-line"><span class="ed-no">17</span><span></span></div>
+          <div class="ed-line"><span class="ed-no">18</span><span>## 性能数据</span></div>
+          <div class="ed-line"><span class="ed-no">19</span><span></span></div>
+          <div class="ed-line"><span class="ed-no">20</span><span>| 文档规模 | 首屏渲染 | 增量重排 |</span></div>
+          <div class="ed-line"><span class="ed-no">21</span><span>| --- | --- | --- |</span></div>
+          <div class="ed-line"><span class="ed-no">22</span><span>| 2k 字 | 80ms | <span class="tok-b">**9ms**</span> |</span></div>
+          <div class="ed-line"><span class="ed-no">23</span><span>| 8k 字 | 210ms | 26ms |</span></div>
+          <div class="ed-line"><span class="ed-no">24</span><span></span></div>
+          <div class="ed-line"><span class="ed-no">25</span><span>## 结论与下一步</span></div>
+          <div class="ed-line"><span class="ed-no">26</span><span>双轨制在 <span class="tok-code">`arm64`</span> 上稳定。下一步把适配层抽成插件：<span class="caret"></span></span></div>
+        </div>
+      </section>
+
+      <!-- 分隔条（可拖拽示意，含 hover 加粗热区） -->
+      <div class="grab act shrink-0" title="拖动调整宽度 · 双击均分">
+        <i></i>
+      </div>
+
+      <!-- ---------- 右预览区 ---------- -->
+      <section class="flex-1 min-w-0 flex flex-col bg-paper">
+        <div class="shrink-0 hair-b flex items-center justify-between px-4" style="height:30px; background:#FCFCFA;">
+          <span class="text-[11px] font-medium" style="color:#6E7781;">实时预览 · 公众号样式</span>
+          <div class="flex items-center gap-1.5">
+            <span class="text-[10.5px]" style="color:#9aa1ab;">宽屏</span>
+            <span class="switch on"><i></i></span>
+            <span class="ml-1 text-[10.5px] px-1.5 py-0.5 rounded" style="background:#EEF0FB; color:#4b4bb8;">max-width 677px</span>
+          </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto">
+          <article class="doc max-w-[640px] mx-auto px-6 py-7 bg-panel" style="min-height:100%; box-shadow:0 0 0 1px #EEEEEA;">
+            <h1>排版引擎选型：CodeMirror + WKWebView 双轨制</h1>
+            <blockquote>目标：一次编写，三平台（<a href="#">公众号</a> / <a href="#">小红书</a> / <a href="#">知乎</a>）无损粘贴。</blockquote>
+
+            <h1 style="font-size:19px; margin-top:26px;">渲染架构</h1>
+            <p>编辑层用 <code class="inl">CodeMirror 6</code> 负责语法高亮与增量解析，预览层把 AST 交给原生 <code class="inl">WKWebView</code> 做离线排版，两端共享同一份 <code class="inl">state.doc</code>，避免二次序列化。</p>
+            <ul>
+              <li><strong>零依赖离线</strong>：mermaid 走预打包 UMD，不走 CDN；</li>
+              <li><strong>流式重排</strong>：输入停顿 120ms 才触发预览刷新；</li>
+              <li><strong>平台适配层</strong>：针对三个目标站点各自的 CSS 清洗规则。</li>
+            </ul>
+
+            <div class="cb">
+              <div class="cb-head">
+                <span class="mono text-[10.5px]" style="color:#9aa1ab;">javascript · render.ts</span>
+                <button class="flex items-center gap-1 text-[10.5px] px-1.5 py-0.5 rounded" style="color:#6E7781;" onmouseover="this.style.background='#EEF0FB'" onmouseout="this.style.background='transparent'">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                  复制
+                </button>
+              </div>
+              <div class="cb-body"><pre style="margin:0;"><span class="c-com">// 增量重排：只更新脏区段</span>
+<span class="c-key">const</span> dirty = doc.<span class="c-fn">patch</span>(prev);
+<span class="c-key">if</span> (dirty.length) bridge.<span class="c-fn">post</span>({ <span class="c-str">'render'</span>: dirty });</pre></div>
+            </div>
+
+            <h1 style="font-size:19px; margin-top:26px;">流程示意</h1>
+            <div class="mm">
+              <svg width="100%" height="120" viewBox="0 0 560 120" font-family="Inter, sans-serif">
+                <defs><marker id="arw" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#B9BDD4"/></marker></defs>
+                <path class="mm-edge" d="M108 60 H 148"/>
+                <path class="mm-edge" d="M268 60 H 308"/>
+                <path class="mm-edge" d="M428 60 H 462"/>
+                <foreignObject x="8" y="42" width="100" height="36"><div xmlns="http://www.w3.org/1999/xhtml" class="mm-node">Markdown 源</div></foreignObject>
+                <foreignObject x="148" y="42" width="120" height="36"><div xmlns="http://www.w3.org/1999/xhtml" class="mm-node">CM6 增量解析</div></foreignObject>
+                <foreignObject x="308" y="42" width="120" height="36"><div xmlns="http://www.w3.org/1999/xhtml" class="mm-node">AST → HTML</div></foreignObject>
+                <foreignObject x="462" y="42" width="92" height="36"><div xmlns="http://www.w3.org/1999/xhtml" class="mm-node" style="border-color:#2EA043;">剪贴板</div></foreignObject>
+                <text x="280" y="112" text-anchor="middle" font-size="10" fill="#9aa1ab">图 1 · mermaid flowchart（离线渲染占位）</text>
+              </svg>
+            </div>
+
+            <h1 style="font-size:19px; margin-top:26px;">性能数据</h1>
+            <table>
+              <thead><tr><th>文档规模</th><th>首屏渲染</th><th>增量重排</th></tr></thead>
+              <tbody>
+                <tr><td>2k 字</td><td>80ms</td><td><strong style="color:#5B5BD6;">9ms</strong></td></tr>
+                <tr><td>8k 字</td><td>210ms</td><td>26ms</td></tr>
+              </tbody>
+            </table>
+
+            <hr>
+            <h1 style="font-size:19px;">结论与下一步</h1>
+            <p>双轨制在 <code class="inl">arm64</code> 上表现稳定。下一步把<strong>平台适配层</strong>抽成插件机制，让「导出为公众号」这类动作可以在运行时热替换样式表，而不必重新打包整个壳。</p>
+            <p style="font-size:12.5px; color:#9aa1ab; border-top:1px dashed #E8E8E4; padding-top:12px;">— 完 · 由 WEditor 排版 · <span class="mono">© 2026</span></p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <!-- ===================== 底部状态条 24px ===================== -->
+    <footer class="shrink-0 hair-t flex items-center px-3 text-[11px] select-none" style="height:24px; background:#FCFCFA; color:#6E7781;">
+      <span class="mono">中文 386 字</span>
+      <span class="mx-2" style="color:#D4D4CE;">·</span>
+      <span class="mono">行数 26</span>
+      <span class="mx-2" style="color:#D4D4CE;">·</span>
+      <span class="mono">词数 214</span>
+      <span class="mx-2" style="color:#D4D4CE;">·</span>
+      <span class="mono">≈ 1 分钟阅读</span>
+
+      <div class="ml-auto flex items-center gap-4">
+        <span class="flex items-center gap-1.5 tip">
+          <span class="switch on"><i></i></span>同步滚动
+          <div class="tipbox" style="top:auto; bottom:calc(100% + 7px); transform:translate(-50%,0); left:50%;">
+            同步滚动 <kbd style="background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.25);color:#eee;">⌘</kbd><kbd style="background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.25);color:#eee;">⇧</kbd><kbd style="background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.25);color:#eee;">S</kbd>
+          </div>
+        </span>
+        <span class="flex items-center gap-1.5">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#2EA043" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          Markdown
+        </span>
+        <span class="mono" style="color:#9aa1ab;">UTF-8 · LF</span>
+        <span style="color:#9aa1ab;">深色模式可在设置中开启 ⌘,</span>
+      </div>
+    </footer>
+  </div><!-- /窗口壳内层 -->
+</div><!-- /窗口壳外层 -->
+</body>
+</html>

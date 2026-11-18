@@ -22,7 +22,6 @@ import {
   WindowMaximise,
   WindowUnmaximise,
   WindowSetTitle,
-  WindowSetAlwaysOnTop,
   BrowserOpenURL,
   Quit,
   OnFileDrop,

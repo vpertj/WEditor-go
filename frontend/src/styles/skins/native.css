@@ -1,0 +1,60 @@
+/* ============================================================
+   皮肤 · native（Apple HIG / Xcode vibrancy）chrome 覆盖层
+   仅作用于窗口外壳/导航/工具条；markdown 预览排版仍由
+   主题系统（--theme-* / theme-system-*）控制，正交共存。
+   布局结构本身在 App.vue 分支 + base.css 通用件里，本文件
+   只做 native 语境下的细节修正与旧竖栏的隐藏。
+   ============================================================ */
+
+html[data-skin="native"] body { background: #DDE3EC; }
+
+#app[data-skin="native"] {
+  /* 桌面壁纸：为 vibrancy 提供可折射内容（浏览器 mock 环境下模拟桌面；
+     原生窗口内 vibrancy 折射的是窗口后方真实桌面，此处仅作底色兜底） */
+  background:
+    radial-gradient(1100px 640px at 12% -8%, rgba(255, 255, 255, 0.9), transparent 62%),
+    radial-gradient(900px 620px at 92% 14%, rgba(150, 196, 238, 0.62), transparent 60%),
+    radial-gradient(760px 560px at 76% 108%, rgba(126, 214, 199, 0.40), transparent 58%),
+    linear-gradient(148deg, #E7EDF5 0%, #CFDAEA 46%, #BFCCDF 100%);
+}
+
+/* unified toolbar 整条即拖拽区（--app-region:drag），交互控件各自 no-drag */
+html[data-skin="native"] .skin-toolbar {
+  --app-region: drag;
+  -webkit-app-region: drag;
+  user-select: none;
+}
+
+/* 左侧竖栏 AppHeader（workbench 遗留结构）在 native 下隐藏 —— 
+   native 用顶置 unified toolbar + source-list sidebar（App.vue 分支渲染） */
+html[data-skin="native"] .app-header.vertical { display: none; }
+
+/* content 层材质：让 vibrancy 层次成立 */
+html[data-skin="native"] .app-content {
+  background: var(--surface);
+  -webkit-backdrop-filter: blur(7px) saturate(1.35);
+  backdrop-filter: blur(7px) saturate(1.35);
+}
+
+/* footer：native 状态条材质（半透 vibrancy，hairline 上边框） */
+html[data-skin="native"] .app-footer {
+  height: var(--skin-footer-h);
+  padding: 0 12px;
+  display: flex; align-items: center;
+  background: var(--footer-bg);
+  -webkit-backdrop-filter: var(--footer-blur);
+  backdrop-filter: var(--footer-blur);
+  border-top: 1px solid var(--border-hairline);
+  box-shadow: none;
+  font-size: 11.5px; color: var(--text-secondary);
+}
+html[data-skin="native"] .app-footer::before { display: none; }
+html[data-skin="native"] .app-footer .stat-item { font-size: 11.5px; font-weight: 400; gap: 5px; }
+html[data-skin="native"] .app-footer .stat-item svg { width: 12px; height: 12px; }
+html[data-skin="native"] .app-footer .stat-item:hover { color: var(--text-primary); transform: none; }
+html[data-skin="native"] .app-footer .footer-left { gap: 0; }
+html[data-skin="native"] .app-footer .footer-left .stat-item { padding: 0 9px; }
+
+/* 面板头部去掉旧的渐变装饰条（native 走 hairline 语言） */
+html[data-skin="native"] .panel-header { background: var(--formatbar-bg); border-bottom: 1px solid var(--border-hairline); }
+html[data-skin="native"] .panel-header::before { display: none; }

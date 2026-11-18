@@ -138,7 +138,11 @@
         v-show="viewMode !== 'wysiwyg' || !wysiwygReady"
         :markdown="markdownContent"
         :sync-scroll-enabled="syncScrollEnabled"
+        :skin="skin"
+        :active-platform="activePlatform"
+        :platform-request="platformRequest"
         @html-generated="(val) => viewMode !== 'wysiwyg' && $emit('html-generated', val)"
+        @platform-change="(p) => $emit('platform-change', p)"
         class="preview-content"
       />
       <!-- 所见即所得（Milkdown）：后台预热，就绪后无缝切换 -->
@@ -182,6 +186,21 @@ const props = defineProps({
   fileOpenTick: {
     type: Number,
     default: 0
+  },
+  // ===== UI 皮肤透传（task-8）=====
+  skin: {
+    type: String,
+    default: 'native'
+  },
+  // workbench 预览平台 tab（仅 skin=workbench 生效；native 下 PreviewPane 保持现状）
+  activePlatform: {
+    type: String,
+    default: 'wechat'
+  },
+  // 外部（⌘1/2/3、顶栏 CTA split）下发的平台切换请求；PreviewPane watch 应用
+  platformRequest: {
+    type: String,
+    default: ''
   }
 })
 
@@ -191,7 +210,8 @@ const emit = defineEmits([
   'load-sample',
   'html-generated',
   'import-markdown',
-  'toggle-sync-scroll'
+  'toggle-sync-scroll',
+  'platform-change'
 ])
 
 // 空状态引导卡片：首次进入且内容为空时显示；一旦开始输入内容即永久隐藏（一次性引导）
@@ -233,6 +253,12 @@ watch(() => props.fileOpenTick, () => {
   overflow: hidden;
   background: var(--theme-bg-secondary, #f5f5f5);
   position: relative;
+}
+
+/* workbench 皮肤：双栏平铺（rail/panel2/tabbar 已是外层 chrome，此处去留白） */
+html[data-skin="workbench"] .app-main {
+  gap: 0;
+  padding: 0;
 }
 
 .editor-panel,

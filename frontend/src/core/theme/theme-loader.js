@@ -15,6 +15,22 @@
  */
 
 (function () {
+  // ============================================================
+  // UI Skin（界面皮肤）预写：在 Vue 挂载前给 <html> 同步设置 data-skin，
+  // 避免首帧以默认皮肤渲染再切换的闪烁（FOUC）。
+  // 与 composables/useAppSkin.js 的规则保持一致（独立小函数、零依赖）。
+  // key/取值变更时两处要同步。
+  // ============================================================
+  (function applySkinAttr() {
+    var SKIN_KEY = 'weditor-ui-skin';
+    var skin = 'native';
+    try {
+      var v = localStorage.getItem(SKIN_KEY);
+      if (v === 'workbench' || v === 'native') skin = v;
+    } catch (_) {}
+    document.documentElement.setAttribute('data-skin', skin);
+  })();
+
   // 预设颜色主题的最小化版本，确保脚本独立性
   const colorThemePresets = {
     chijin: { primary: '#FF0097', primaryHover: '#E60087', primaryLight: 'rgba(255, 0, 151, 0.08)', primaryDark: '#CC0077', inlineCodeBg: 'rgba(255, 0, 151, 0.08)', inlineCodeText: '#CC0077', inlineCodeBorder: 'rgba(255, 0, 151, 0.15)' },

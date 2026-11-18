@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>WEditor · 版本 C 静谧写作 (iA/Bear 暗色专注式)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,300;1,6..72,400&family=JetBrains+Mono:wght@300;400;500&family=Noto+Serif+SC:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+/* ============ 材质色阶：暗而不闷，靠深棕/深蓝分层而非纯黑 ============ */
+:root{
+  --ink-0:#101218;        /* 桌面底 / 最深沟槽 */
+  --ink-1:#14161C;        /* 窗口壳背景 */
+  --ink-2:#191C24;        /* 编辑区 */
+  --ink-3:#1E222C;        /* 抽屉 / 卡片 */
+  --ink-4:#252A36;        /* 浮层 / hover */
+  --warm-1:#1C1A17;       /* 暖纸底（正文所在的最内层材质） */
+  --warm-2:#232019;       /* 更暖一档，用于行光晕底 */
+  --paper:#E6E1D5;        /* 柔白米墨 */
+  --paper-dim:#BDB8AC;
+  --muted:#7D8290;        /* 次要文字 */
+  --muted-2:#565B68;
+  --amber:#E8B86B;        /* 强调一：当前行 / 激活态 */
+  --amber-soft:rgba(232,184,107,.13);
+  --teal:#5FB3A1;         /* 强调二：链接 / 成功 */
+  --line:rgba(230,225,213,.07);
+  --line-2:rgba(230,225,213,.13);
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Helvetica Neue",system-ui,sans-serif;
+  --serif:"Newsreader","Noto Serif SC","Songti SC",Georgia,serif;
+  --mono:"JetBrains Mono","SF Mono",Menlo,monospace;
+}
+html,body{margin:0;padding:0;background:#0A0B0F;width:1440px;height:900px;overflow:hidden;font-family:var(--sans);}
+*{box-sizing:border-box;}
+.d{font-family:var(--sans);}
+.sr{font-family:var(--serif);}
+.mn{font-family:var(--mono);}
+
+/* 细滚动条：只在需要时可见，弱化处理 */
+.thin::-webkit-scrollbar{width:8px;height:8px}
+.thin::-webkit-scrollbar-track{background:transparent}
+.thin::-webkit-scrollbar-thumb{background:rgba(230,225,213,.09);border-radius:8px;border:2px solid transparent;background-clip:content-box}
+.thin:hover::-webkit-scrollbar-thumb{background:rgba(230,225,213,.17);background-clip:content-box}
+.no-bar::-webkit-scrollbar{width:0;height:0}
+
+.hairline{box-shadow:inset 0 .5px 0 rgba(230,225,213,.06)}
+.hairline-b{box-shadow:inset 0 -.5px 0 rgba(230,225,213,.06)}
+
+/* markdown 语法字符：显示但压到 30% 透明度 —— 本版 signature */
+.mk{color:var(--muted);opacity:.30;font-weight:400;transition:opacity .18s}
+/* 光标所在行：语法恢复、行底琥珀微光 */
+.focus-line .mk{opacity:.62}
+.focus-line{position:relative}
+.focus-line::before{
+  content:"";position:absolute;left:-46px;right:-34px;top:-9px;bottom:-9px;
+  background:radial-gradient(58% 130% at 8% 50%,rgba(232,184,107,.155),rgba(232,184,107,.055) 46%,rgba(232,184,107,0) 76%);
+  filter:blur(10px);pointer-events:none;
+}
+.focus-line::after{
+  content:"";position:absolute;left:-27px;top:3px;bottom:3px;width:1.5px;border-radius:2px;
+  background:linear-gradient(180deg,rgba(232,184,107,0),var(--amber) 22%,var(--amber) 78%,rgba(232,184,107,0));
+  opacity:.85;pointer-events:none;
+}
+.caret{display:inline-block;width:1.5px;height:1.02em;background:var(--amber);vertical-align:-.16em;margin-left:1px;
+  box-shadow:0 0 6px rgba(232,184,107,.75);animation:blink 1.15s steps(1,end) infinite}
+@keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+
+/* 顶部工具浮条：默认淡出，悬停恢复 full opacity */
+.floatbar{opacity:.42;transition:opacity .22s ease}
+.floatbar:hover{opacity:1}
+.tb-btn{height:26px;min-width:26px;display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  padding:0 6px;border-radius:6px;color:var(--muted);cursor:default}
+.tb-btn:hover{background:rgba(230,225,213,.06);color:var(--paper)}
+.tb-btn.on{background:var(--amber-soft);color:var(--amber)}
+
+/* tooltip（⌘快捷键提示） */
+.tip{position:relative}
+.tip::after{content:attr(data-tip);position:absolute;top:calc(100% + 9px);left:50%;transform:translateX(-50%) translateY(-3px);
+  background:#2C313D;color:#DCDDe2;font-size:11px;line-height:1;padding:6px 8px;border-radius:6px;white-space:nowrap;
+  box-shadow:0 6px 20px rgba(0,0,0,.45),inset 0 .5px 0 rgba(255,255,255,.07);
+  opacity:0;pointer-events:none;transition:opacity .14s;z-index:80}
+.tip:hover::after{opacity:1}
+
+/* 分栏拖拽条 */
+.splitter{width:9px;cursor:col-resize;position:relative;background:linear-gradient(90deg,transparent,rgba(230,225,213,.03),transparent)}
+.splitter::after{content:"";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:3px;height:34px;border-radius:3px;
+  background:rgba(230,225,213,.12)}
+.splitter:hover::after{background:var(--amber);opacity:.7}
+
+/* 手机外框 */
+.phone{width:360px;height:760px;border-radius:44px;background:#0C0D11;position:relative;
+  box-shadow:0 0 0 1px rgba(230,225,213,.10),0 0 0 10px #1A1C22,0 0 0 11px rgba(230,225,213,.08),
+             0 30px 70px -20px rgba(0,0,0,.75), inset 0 0 0 1px rgba(255,255,255,.03)}
+.phone-screen{position:absolute;inset:9px;border-radius:36px;overflow:hidden;background:#FFFFFF}
+.statusbar{position:absolute;top:0;left:0;right:0;height:34px;z-index:6;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-family:var(--sans);font-size:12.5px;color:#111}
+
+/* 排版抽屉把手 */
+.handle{width:38px;height:4px;border-radius:4px;background:rgba(230,225,213,.22)}
+
+/* 命令面板 backdrop */
+.overlay{position:absolute;inset:0;background:linear-gradient(90deg,rgba(8,9,12,.16),rgba(8,9,12,.05) 55%,rgba(8,9,12,0) 66%);z-index:60;
+  padding:0}
+.panel{position:absolute;left:734px;top:650px;width:214px;background:rgba(30,34,44,.93);backdrop-filter:blur(14px) saturate(130%);-webkit-backdrop-filter:blur(14px) saturate(130%);border-radius:13px;overflow:hidden;
+  box-shadow:0 40px 90px -24px rgba(0,0,0,.8),inset 0 .5px 0 rgba(230,225,213,.12),0 0 0 .5px rgba(0,0,0,.6)}
+.cmd-item{display:flex;align-items:center;gap:9px;padding:5px 12px;font-size:11.5px;color:var(--paper-dim)}
+.cmd-item.sel{background:linear-gradient(90deg,var(--amber-soft),rgba(232,184,107,.04));color:var(--paper)}
+.cmd-item.sel .ic{color:var(--amber)}
+
+/* 右键菜单 */
+.ctx{position:absolute;width:232px;background:rgba(37,42,54,.96);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  border-radius:10px;padding:5px;box-shadow:0 22px 50px -14px rgba(0,0,0,.7),inset 0 .5px 0 rgba(230,225,213,.12),0 0 0 .5px rgba(0,0,0,.5);z-index:70}
+.ctx-i{display:flex;align-items:center;justify-content:space-between;padding:5px 9px;border-radius:6px;font-size:12.5px;color:var(--paper-dim)}
+.ctx-i.sel{background:var(--amber);color:#1A1710;font-weight:500}
+.ctx-i.sel .kb{color:rgba(26,23,16,.62)}
+.kb{font-size:11px;color:var(--muted-2);letter-spacing:.02em}
+
+/* 公众号渲染样式（微信常见规格：16px / 1.75 行距 / 两端留白） */
+.wx h2{font-size:20px;font-weight:700;color:#262626;margin:26px 0 12px;line-height:1.5}
+.wx p{font-size:16px;line-height:1.75;color:#3F3F3F;margin:0 0 16px;text-align:justify}
+.wx strong{color:#111}
+.wx blockquote{margin:0 0 16px;padding:12px 14px;background:#F7F7F7;border-left:3px solid #5FB3A1;color:#5A5A5A;font-size:15px;line-height:1.7}
+.wx ul{margin:0 0 16px;padding-left:20px}
+.wx li{font-size:16px;line-height:1.7;color:#3F3F3F;margin-bottom:6px}
+.wx pre{margin:0 0 16px;padding:14px;background:#1F2430;border-radius:6px;overflow:hidden}
+.wx code.ttl{font-size:13px;background:#F0F0F0;color:#5FB3A1;padding:1px 5px;border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- ===================== mac 窗口壳 1440x900 ===================== -->
+<div style="position:relative;display:flex;flex-direction:column;width:1440px;height:900px;background:var(--ink-1);
+  border-radius:12px 12px 0 0;overflow:hidden;
+  box-shadow:inset 0 .5px 0 rgba(230,225,213,.14),0 0 0 .5px rgba(0,0,0,.6)">
+
+  <!-- ---------- 顶栏：40px 极淡 chrome ---------- -->
+  <div style="position:absolute;top:0;left:0;right:0;height:40px;display:flex;align-items:center;
+    background:linear-gradient(180deg,#1A1D25,#171A21);box-shadow:inset 0 .5px 0 rgba(230,225,213,.10),0 .5px 0 rgba(0,0,0,.5);z-index:40">
+
+    <!-- 红绿灯占位 -->
+    <div style="display:flex;align-items:center;gap:8px;padding-left:14px">
+      <span style="width:12px;height:12px;border-radius:50%;background:#F0544A;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.22)"></span>
+      <span style="width:12px;height:12px;border-radius:50%;background:#F5AE3C;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.22)"></span>
+      <span style="width:12px;height:12px;border-radius:50%;background:#55C35A;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.22)"></span>
+    </div>
+
+    <!-- 文档身份：弱化到几乎不可见，标题即路径 -->
+    <div class="d" style="display:flex;align-items:baseline;gap:8px;margin-left:22px">
+      <span style="font-size:12.5px;color:var(--paper-dim);letter-spacing:.01em">渐进式后端入门.md</span>
+      <span style="font-size:11px;color:var(--muted-2)">未保存更改 · 自动保存已开启</span>
+    </div>
+
+    <!-- 视图切换：分段控件，激活态用琥珀 -->
+    <div class="d" style="position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:2px;
+      background:rgba(230,225,213,.045);border-radius:8px;padding:3px;box-shadow:inset 0 .5px 0 rgba(230,225,213,.07)">
+      <span class="tip on" data-tip="分栏 · ⌘1" style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 11px;border-radius:6px;
+        font-size:11.5px;color:var(--amber);background:var(--amber-soft);box-shadow:inset 0 .5px 0 rgba(232,184,107,.22)">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M12 4v16"/></svg>分栏</span>
+      <span class="tip" data-tip="源码 · ⌘2" style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 11px;border-radius:6px;font-size:11.5px;color:var(--muted)">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M9 7l-5 5 5 5"/><path d="M15 7l5 5-5 5"/></svg>源码</span>
+      <span class="tip" data-tip="排版所见即所得 · ⌘3" style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 11px;border-radius:6px;font-size:11.5px;color:var(--muted)">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 18h16"/><path d="M6 14l6-9 6 9"/><path d="M9 11h6"/></svg>排版</span>
+    </div>
+
+    <!-- 右组：入口 / 导出 / 设置 -->
+    <div style="margin-left:auto;display:flex;align-items:center;gap:3px;padding-right:12px">
+      <span class="tb-btn tip" data-tip="打开文件 · ⌘O">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span>
+      <span class="tb-btn tip" data-tip="最近文件 · ⌘⇧O">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></span>
+      <span style="width:1px;height:16px;background:var(--line-2);margin:0 6px"></span>
+      <!-- 导出/复制：本版唯一常驻的主动作，仍保持克制 -->
+      <span class="tip" data-tip="复制排版结果并粘贴到公众号 · ⇧⌘C" style="display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:7px;
+        font-size:11.5px;color:var(--paper);background:rgba(230,225,213,.07);box-shadow:inset 0 .5px 0 rgba(230,225,213,.10)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.7" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 5.5A2.5 2.5 0 0 0 12.5 3h-6A3.5 3.5 0 0 0 3 6.5v6A2.5 2.5 0 0 0 5.5 15"/></svg>
+        复制到<span style="color:var(--teal)">公众号</span>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></span>
+      <span style="width:1px;height:16px;background:var(--line-2);margin:0 6px"></span>
+      <span class="tb-btn tip" data-tip="命令面板 · ⌘K">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 6h16M4 12h10M4 18h7"/></svg></span>
+      <span class="tb-btn tip" data-tip="设置 · ⌘,">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 7h9M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2.4"/><circle cx="8" cy="17" r="2.4"/></svg></span>
+    </div>
+  </div>
+
+  <!-- ---------- 主区：左写作流(单栏窄版心) + 分隔条 + 右排版抽屉 ---------- -->
+  <div class="mainregion" style="display:flex;flex:1;min-height:0;margin-top:40px;margin-bottom:44px">
+
+    <!-- ===== 写作流 ===== -->
+    <div style="flex:1;min-width:0;position:relative;background:var(--ink-2);display:flex;flex-direction:column">
+      <!-- 最内层材质：略暖一档的纸面，让米白正文有依托 -->
+      <div style="position:absolute;inset:0;background:
+        radial-gradient(120% 70% at 50% 0%, rgba(232,184,107,.035), transparent 62%),
+        linear-gradient(180deg,var(--warm-1) 0%,#181A20 34%,var(--ink-2) 100%);"></div>
+
+      <!-- 悬停才浮现的工具浮条（贴内容上方，非窗口 chrome） -->
+      <div class="floatbar d" style="position:relative;z-index:12;margin:14px auto 0;width:min(68ch,100%);padding-left:0;
+        display:flex;align-items:center;gap:2px">
+        <span class="tb-btn tip" data-tip="加粗 · ⌘B"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 5h6a3.5 3.5 0 0 1 0 7H7zM7 12h7a3.5 3.5 0 0 1 0 7H7z"/></svg></span>
+        <span class="tb-btn tip" data-tip="斜体 · ⌘I"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M10 5h7M7 19h7M14 5l-3 14"/></svg></span>
+        <span class="tb-btn tip" data-tip="标题级别 · ⌘⇧1…6"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M5 6v12M13 6v12M5 12h8"/><text x="16.5" y="19" font-size="9" fill="currentColor" stroke="none" font-family="var(--mono)">2</text></svg></span>
+        <span class="tb-btn tip" data-tip="无序列表 · ⌘⇧L"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.6" cy="6" r="1.3" fill="currentColor" stroke="none"/><circle cx="4.6" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="4.6" cy="18" r="1.3" fill="currentColor" stroke="none"/></svg></span>
+        <span class="tb-btn tip" data-tip="引用 · ⌘⇧U"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 5v14"/><path d="M11 8h8M11 12h8M11 16h5"/></svg></span>
+        <span class="tb-btn tip" data-tip="代码块 · ⌘⇧K"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M8 8l-4 4 4 4M16 8l4 4-4 4"/></svg></span>
+        <span class="tb-btn tip" data-tip="插入链接 · ⌘K"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.7" stroke-linecap="round"><path d="M10 14a4 4 0 0 1 0-5.6l2-2a4 4 0 0 1 5.6 5.6l-1 1"/><path d="M14 10a4 4 0 0 1 0 5.6l-2 2A4 4 0 0 1 6.4 12l1-1"/></svg></span>
+        <span style="flex:1"></span>
+        <span class="tip" data-tip="排版抽屉：上滑查看成品 · ⌥⌘P" style="display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 9px;border-radius:6px;font-size:11px;color:var(--muted)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M10.5 18.5h3"/></svg>排版抽屉</span>
+        <span style="width:1px;height:14px;background:var(--line-2);margin:0 6px"></span>
+        <span class="tb-btn tip" data-tip="专注模式：隐藏所有非必要元素 · F5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/></svg></span>
+      </div>
+
+      <!-- 68ch 居中窄版心：编辑区本身就是版心 -->
+      <div class="thin no-bar" style="position:relative;z-index:10;flex:1;overflow:hidden;padding:14px 0 0">
+        <div style="width:68ch;margin:0 auto;font-family:var(--serif);color:var(--paper)">
+
+          <div style="display:flex;gap:14px;font-size:11px;color:var(--muted-2);font-family:var(--sans);letter-spacing:.04em;margin-bottom:14px">
+            <span>草稿 v3</span><span>·</span><span>2026年11月18日</span><span>·</span><span style="color:var(--teal)">同步至 iCloud</span>
+          </div>
+
+          <div style="font-size:28px;line-height:1.3;font-weight:400;letter-spacing:-.01em;margin-bottom:4px">
+            <span class="mk">#</span> 从 0 到 1：渐进式后端入门
+          </div>
+          <div style="font-size:14px;color:var(--muted);margin-bottom:18px;font-style:italic">写给第一次独立做服务端的你。</div>
+
+          <div style="font-size:18px;line-height:1.45;font-weight:500;margin:18px 0 9px">
+            <span class="mk">##</span> 为什么需要先跑起来
+          </div>
+          <div style="font-size:17px;line-height:1.85;text-align:justify;margin-bottom:12px">
+            很多人卡在第一步：<span style="font-weight:600">想把架构想清楚再动手</span>。但后端的复杂度是长出来的，不是设计出来的。先让一个接口能返回正确的 JSON，你对「请求—处理—响应」的理解会比读十篇文章都深。
+          </div>
+
+          <!-- 焦点行：琥珀微光 + 语法恢复 + 打字光标 -->
+          <div class="focus-line" style="font-size:17px;line-height:1.75;text-align:justify;margin-bottom:12px">
+            我的建议顺序是 <span class="mk">**</span><span style="font-weight:600">路由 → 存储 → 鉴权 → 观测</span><span class="mk">**</span>，每一步都能独立验证，不会出现「改了三小时还起不来」<span class="caret"></span>
+          </div>
+
+          <div style="font-size:18px;line-height:1.4;font-weight:500;margin:12px 0 6px">
+            <span class="mk">##</span> 最小可用的一份路由
+          </div>
+          <div style="font-size:17px;line-height:1.8;margin-bottom:10px">
+            <span class="mk">&gt;</span> 不要过早引入消息队列。<span style="color:var(--muted);font-style:italic">——它解决的是你自己制造的问题。</span>
+          </div>
+
+          <div style="margin-bottom:14px">
+            <div style="font-size:16.5px;line-height:1.7"><span class="mk">-</span> 单机 SQLite 足够撑到日均 <span style="font-weight:600">50 万</span>请求</div>
+            <div style="font-size:16.5px;line-height:1.7"><span class="mk">-</span> 先把日志打好，再考虑分布式追踪</div>
+            <div style="font-size:16.5px;line-height:1.7"><span class="mk">-</span> 缓存是优化项，不是地基 <span class="mk">`ttl=60`</span></div>
+          </div>
+
+          <div style="font-size:17px;line-height:1.85;margin-bottom:10px;text-align:justify">
+            以 Go 为例，标准库就能写出可维护的分发逻辑，参考 <a style="color:var(--teal);text-decoration:none;border-bottom:1px solid rgba(95,179,161,.42)">net/http  ServeMux</a> 的做法：
+          </div>
+
+          <!-- 代码块：深色凹陷材质，与纸面拉开层次 -->
+          <div style="width:max-content;max-width:100%;background:var(--ink-0);border-radius:9px;padding:13px 16px;margin-bottom:14px;
+            box-shadow:inset 0 .5px 0 rgba(230,225,213,.05),0 10px 26px -16px rgba(0,0,0,.8)">
+            <div class="mn" style="font-size:12px;line-height:1.65;color:#C6C9D4">
+<span style="color:var(--muted)">1</span>  <span style="color:#7D8DA8">func</span> <span style="color:var(--amber)">router</span>() *http.ServeMux {<br>
+<span style="color:var(--muted)">2</span> &nbsp;&nbsp;m := http.NewServeMux()<br>
+<span style="color:var(--muted)">3</span> &nbsp;&nbsp;m.<span style="color:var(--amber)">HandleFunc</span>(<span style="color:var(--teal)">"GET /articles/{id}"</span>, getArticle)<br>
+<span style="color:var(--muted)">4</span> &nbsp;&nbsp;<span style="color:#5A6070">// 先别写中间件，等第二个横切需求出现</span><br>
+<span style="color:var(--muted)">5</span> &nbsp;&nbsp;<span style="color:#7D8DA8">return</span> m<br>
+<span style="color:var(--muted)">6</span>  }
+            </div>
+          </div>
+
+          <div style="margin-bottom:8px">
+            <table style="width:100%;border-collapse:collapse;font-size:13.5px;line-height:1.35">
+              <thead>
+                <tr style="color:var(--muted);font-size:13px;font-family:var(--sans);letter-spacing:.04em">
+                  <th style="text-align:left;padding:5px 12px 5px 0;border-bottom:1px solid var(--line-2)">阶段</th>
+                  <th style="text-align:left;padding:5px 12px 0;border-bottom:1px solid var(--line-2)">标志</th>
+                  <th style="text-align:right;padding:5px 0 5px 12px;border-bottom:1px solid var(--line-2)">周期</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td style="padding:3px 12px 3px 0;border-bottom:1px solid var(--line)">路由</td><td style="padding:3px 12px;border-bottom:1px solid var(--line);color:var(--paper-dim)">接口稳定返回</td><td style="padding:3px 0 3px 12px;border-bottom:1px solid var(--line);text-align:right;color:var(--muted)">3 天</td></tr>
+                <tr><td style="padding:3px 12px 3px 0;border-bottom:1px solid var(--line)">存储</td><td style="padding:3px 12px;border-bottom:1px solid var(--line);color:var(--paper-dim)">重启不丢数据</td><td style="padding:3px 0 3px 12px;border-bottom:1px solid var(--line);text-align:right;color:var(--muted)">1 周</td></tr>
+
+              </tbody>
+            </table>
+            <div style="font-size:14.5px;color:var(--muted);margin-top:6px"><span class="mk">|</span> 鉴权、观测两阶段见下文 —— 继续向下滚动。</div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 可拖拽分栏条 ===== -->
+    <div class="splitter tip" data-tip="拖动调整宽度 · 双击均分 ⌥⌘0" style="height:100%"></div>
+
+    <!-- ===== 右侧：排版预览（手机壳实时成品） ===== -->
+    <div style="width:420px;flex:none;position:relative;background:
+        linear-gradient(180deg,#151821,#12141B);
+      display:flex;flex-direction:column;box-shadow:inset 1px 0 0 rgba(0,0,0,.5),inset 1.5px 0 0 rgba(230,225,213,.035)">
+
+      <!-- 抽屉头：说明这是「排版抽屉」而非普通预览 -->
+      <div class="d" style="padding:12px 18px 10px;display:flex;align-items:center;gap:10px;box-shadow:0 .5px 0 var(--line)">
+        <span style="font-size:11px;letter-spacing:.14em;color:var(--muted-2);text-transform:uppercase">排版抽屉</span>
+        <span class="kb" style="margin-left:auto">⌥⌘P</span>
+      </div>
+      <div class="d" style="padding:0 18px 12px;display:flex;align-items:center;gap:6px">
+        <span style="display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 12px;border-radius:14px;font-size:12px;
+          color:var(--paper);background:rgba(95,179,161,.14);box-shadow:inset 0 .5px 0 rgba(95,179,161,.34)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.9" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>公众号</span>
+        <span style="height:26px;display:inline-flex;align-items:center;padding:0 12px;border-radius:14px;font-size:12px;color:var(--muted)">小红书</span>
+        <span style="height:26px;display:inline-flex;align-items:center;padding:0 12px;border-radius:14px;font-size:12px;color:var(--muted)">知乎</span>
+        <span style="flex:1"></span>
+        <span class="tb-btn tip" data-tip="刷新预览 · ⌘R" style="height:24px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/></svg></span>
+      </div>
+
+      <!-- 手机壳：360px 实时成品 -->
+      <div style="flex:1;display:flex;justify-content:center;align-items:flex-start;padding:6px 0 0;overflow:hidden">
+        <div class="phone">
+          <div class="phone-screen thin" style="overflow:hidden">
+            <!-- 状态条 + 微信导航栏 -->
+            <div class="statusbar"><span>12:47</span><span style="display:flex;align-items:center;gap:5px"><svg width="15" height="11" viewBox="0 0 18 12" fill="#111"><path d="M1 9h2v3H1zM5 6.5h2V12H5zM9 4h2v8H9zM13 1h2v11h-2z"/></svg><svg width="14" height="11" viewBox="0 0 16 12" fill="none" stroke="#111" stroke-width="1.4" stroke-linecap="round"><path d="M1.5 4.5a8 8 0 0 1 13 0"/><path d="M4 7a5 5 0 0 1 8 0"/><circle cx="8" cy="10" r="1" fill="#111" stroke="none"/></svg><span style="width:20px;height:10px;border:1px solid #111;border-radius:2.5px;position:relative;display:inline-block"><span style="position:absolute;inset:1.5px;background:#111;border-radius:1px"></span></span></span></div>
+            <div style="position:absolute;top:34px;left:0;right:0;height:54px;background:#FFFFFF;z-index:5;display:flex;align-items:center;padding:0 12px">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg>
+              <div style="flex:1;text-align:center;font-size:15px;color:#111;font-family:var(--sans);padding-right:20px">从 0 到 1：渐进式后端入门</div>
+              <div style="display:flex;gap:2px;align-items:center"><span style="width:4px;height:4px;border-radius:50%;background:#111"></span><span style="width:4px;height:4px;border-radius:50%;background:#111"></span><span style="width:4px;height:4px;border-radius:50%;background:#111"></span></div>
+            </div>
+            <div style="position:absolute;top:88px;left:0;right:0;height:24px;background:#FFF;z-index:5;display:flex;align-items:center;padding-left:16px;gap:8px;box-shadow:0 .5px 0 #EDEDED">
+              <span style="font-size:13px;color:#576B95;font-family:var(--sans)">田小军</span>
+              <span style="font-size:11px;color:#B2B2B2;font-family:var(--sans)">原创</span>
+              <span style="font-size:11px;color:#B2B2B2;font-family:var(--sans)">2026年11月18日</span>
+            </div>
+
+            <!-- 正文（微信渲染） -->
+            <div class="wx" style="position:absolute;top:116px;left:0;right:0;bottom:54px;overflow:hidden;padding:2px 17px 0;font-family:-apple-system,'PingFang SC',sans-serif">
+              <p style="margin-bottom:14px">很多人卡在第一步：<strong>想把架构想清楚再动手</strong>。但后端的复杂度是长出来的，不是设计出来的。先让一个接口能返回正确的 JSON，你对「请求—处理—响应」的理解会比读十篇文章都深。</p>
+              <p>我的建议顺序是 <strong>路由 → 存储 → 鉴权 → 观测</strong>，每一步都能独立验证，不会出现「改了三小时还起不来」的情况。</p>
+              <blockquote>不要过早引入消息队列。<em>它解决的是你自己制造的问题。</em></blockquote>
+              <ul>
+                <li>单机 SQLite 足够撑到日均 <strong>50 万</strong>请求</li>
+                <li>先把日志打好，再考虑分布式追踪</li>
+                <li>缓存是优化项，不是地基 <code class="ttl">ttl=60</code></li>
+              </ul>
+              <h2 style="margin-top:18px">最小可用的一份路由</h2>
+              <p style="margin-bottom:12px">以 Go 为例，标准库就能写出可维护的分发逻辑：</p>
+              <pre><span class="mn" style="font-size:12px;line-height:1.7;color:#CBD0DC;display:block;font-family:var(--mono)">func router() *http.ServeMux {<br>&nbsp;&nbsp;m := http.NewServeMux()<br>&nbsp;&nbsp;m.HandleFunc("GET /articles/{id}",<br>&nbsp;&nbsp;&nbsp;&nbsp;getArticle)<br>&nbsp;&nbsp;return m<br>}</span></pre>
+            </div>
+
+            <!-- 微信底部互动条 -->
+            <div style="position:absolute;bottom:0;left:0;right:0;height:52px;background:#FCFCFC;box-shadow:0 -.5px 0 #E7E7E7;z-index:5;display:flex;align-items:center;justify-content:space-around;font-family:var(--sans);font-size:12px;color:#5A5A5A">
+              <span style="display:flex;align-items:center;gap:5px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5A5A5A" stroke-width="1.6"><path d="M7 11v8H4a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1z"/><path d="M7 11l4-7a2.5 2.5 0 0 1 2.4 3.2L12.5 10H19a2 2 0 0 1 2 2.4l-1.3 5.4A2 2 0 0 1 17.7 20H7"/></svg>赞 128</span>
+              <span style="display:flex;align-items:center;gap:5px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5A5A5A" stroke-width="1.6"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>18</span>
+              <span style="display:flex;align-items:center;gap:5px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5A5A5A" stroke-width="1.6"><path d="M6 4h12v16l-6-4-6 4z"/></svg>在看</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 抽屉脚：一键复制 -->
+      <div class="d" style="padding:10px 18px 14px;display:flex;align-items:center;gap:10px">
+        <span style="font-size:11px;color:var(--muted-2)">已生成内联样式 HTML · 可直接粘贴</span>
+        <span style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 14px;border-radius:8px;font-size:12px;color:#12151A;font-weight:600;
+          background:linear-gradient(180deg,#6CC3B1,#54A895);box-shadow:0 4px 14px -4px rgba(95,179,161,.6),inset 0 .5px 0 rgba(255,255,255,.35)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#12151A" stroke-width="1.9" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 5.5A2.5 2.5 0 0 0 12.5 3h-6A3.5 3.5 0 0 0 3 6.5v6A2.5 2.5 0 0 0 5.5 15"/></svg>复制排版</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------- 底部状态栏：左下 word count 大字低调 ---------- -->
+  <div class="d hairline" style="position:absolute;left:0;right:0;bottom:0;height:44px;display:flex;align-items:center;gap:18px;padding:0 22px;
+    background:linear-gradient(180deg,rgba(16,18,24,.6),#101218);box-shadow:inset 0 .5px 0 rgba(230,225,213,.07);z-index:30">
+    <div style="display:flex;align-items:baseline;gap:7px">
+      <span style="font-family:var(--serif);font-size:23px;font-weight:300;color:var(--paper);letter-spacing:-.01em;line-height:1">1,284</span>
+      <span style="font-size:11px;color:var(--muted-2);letter-spacing:.06em">字</span>
+    </div>
+    <span style="width:1px;height:14px;background:var(--line-2)"></span>
+    <span style="font-size:11.5px;color:var(--muted)">32 行 · 612 词 · <span style="color:var(--paper-dim)">约 4 分钟读完</span></span>
+
+    <span style="flex:1"></span>
+
+    <!-- 同步滚动开关 -->
+    <span class="tip" data-tip="编辑与预览同步滚动 · ⌥⌘S" style="display:inline-flex;align-items:center;gap:8px;font-size:11.5px;color:var(--muted)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 9a8 8 0 0 1 13.5-3.5L20 8"/><path d="M20 4v4h-4"/><path d="M20 15a8 8 0 0 1-13.5 3.5L4 16"/><path d="M4 20v-4h4"/></svg>同步滚动</span>
+    <span style="width:34px;height:18px;border-radius:10px;background:rgba(95,179,161,.22);box-shadow:inset 0 .5px 0 rgba(95,179,161,.4);position:relative">
+      <span style="position:absolute;right:2px;top:2px;width:14px;height:14px;border-radius:50%;background:var(--teal);box-shadow:0 1px 4px rgba(0,0,0,.5)"></span></span>
+
+    <span style="width:1px;height:14px;background:var(--line-2)"></span>
+    <span style="display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted)">
+      <span style="width:6px;height:6px;border-radius:50%;background:var(--teal);box-shadow:0 0 8px rgba(95,179,161,.8)"></span>已保存 12:41</span>
+    <span style="width:1px;height:14px;background:var(--line-2)"></span>
+    <span class="tip" data-tip="专注度：本次会话无干扰 · 点击退出专注" style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--muted-2)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M6 6l1.8 1.8M16.2 16.2L18 18M18 6l-1.8 1.8M7.8 16.2L6 18"/></svg>专注 26 分钟</span>
+  </div>
+
+  <!-- ---------- 命令面板示意（⌘K 唤起，覆盖核心入口） ---------- -->
+  <div class="overlay">
+    <div class="panel">
+      <div style="display:flex;align-items:center;gap:10px;padding:11px 14px;box-shadow:0 .5px 0 rgba(230,225,213,.08)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+        <span class="d" style="font-size:13.5px;color:var(--paper)">复<span class="caret" style="height:1.05em;animation:none;opacity:1"></span></span>
+        <span class="kb" style="margin-left:auto">↵ 执行 · esc 关闭</span>
+      </div>
+      <div style="padding:8px 0 4px">
+        <div class="d" style="padding:3px 12px 4px;font-size:9.5px;color:var(--muted-2);letter-spacing:.1em">操作</div>
+        <div class="cmd-item sel"><span class="ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 5.5A2.5 2.5 0 0 0 12.5 3h-6A3.5 3.5 0 0 0 3 6.5v6A2.5 2.5 0 0 0 5.5 15"/></svg></span>
+          <span>复制到<strong style="font-weight:600">公众号</strong></span>
+          <span style="display:flex;gap:4px;margin-left:auto"><kbd class="kb" style="background:rgba(230,225,213,.07);padding:2px 5px;border-radius:4px">⇧</kbd><kbd class="kb" style="background:rgba(230,225,213,.07);padding:2px 5px;border-radius:4px">⌘</kbd><kbd class="kb" style="background:rgba(230,225,213,.07);padding:2px 5px;border-radius:4px">C</kbd></span></div>
+        <div class="cmd-item"><span class="ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 12h16M12 4l8 8-8 8"/></svg></span>复制到小红书<span class="kb" style="margin-left:auto">⌥⌘2</span></div>
+        <div class="cmd-item"><span class="ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></svg></span>打开排版抽屉<span class="kb" style="margin-left:auto">⌥⌘P</span></div>
+        <div class="cmd-item"><span class="ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 4v10M8 10l4 4 4-4"/><path d="M5 18h14"/></svg></span>复制到知乎<span class="kb" style="margin-left:auto">⌥⌘3</span></div>
+
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

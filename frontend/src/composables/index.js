@@ -24,6 +24,9 @@ export { useWails } from './useWails.js';
 // 平台检测与快捷键适配
 export { usePlatform } from './usePlatform.js';
 
+// 界面皮肤系统（native / workbench，模块级单例）
+export * from './useAppSkin.js';
+
 // 自动保存（草稿恢复 + 定时存档）
 export { useAutoSave } from './useAutoSave.js';
 

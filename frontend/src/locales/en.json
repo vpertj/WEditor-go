@@ -77,6 +77,7 @@
     "nav": {
       "quick": "Quick Nav",
       "general": "General",
+      "skin": "Interface Style",
       "themeSystem": "Theme System",
       "colorTheme": "Color Theme",
       "codeStyle": "Code Style",
@@ -84,6 +85,20 @@
       "fontSize": "Font Size",
       "spacing": "Spacing",
       "updates": "Updates"
+    },
+    "skin": {
+      "title": "Interface Style",
+      "desc": "Choose the overall appearance skin of the app. The skin controls window chrome, navigation and color materials, independently from Markdown typography themes. Switching takes effect immediately, no restart needed.",
+      "follow": "Follow system light/dark automatically",
+      "followDesc": "Uses Creator Workbench when the system is dark, and Native when it is light",
+      "autoPrefix": "Current mapping: ",
+      "nativeName": "Native",
+      "nativeDesc": "Apple HIG · Xcode vibrancy materials · system blue accent",
+      "workbenchName": "Creator Workbench",
+      "workbenchDesc": "Raycast dark theme · icon navigation · tri-platform publishing",
+      "enableTip": "Enable following system appearance",
+      "disableTip": "Disable following system appearance",
+      "appliedToast": "Switched to “{name}”"
     },
     "update": {
       "title": "Automatic Updates",
