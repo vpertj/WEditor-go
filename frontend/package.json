@@ -23,12 +23,13 @@
     "@milkdown/preset-gfm": "^7.15.3",
     "@milkdown/utils": "^7.15.3",
     "codemirror": "^6.0.1",
+    "lucide-vue-next": "^1.0.0",
     "mermaid": "^11.9.0",
+    "mygo-runtime": "^0.10.0",
     "prismjs": "^1.30.0",
     "vue": "^3.3.8",
     "vue-codemirror": "^6.1.1",
-    "vue-i18n": "^9.14.5",
-    "mygo-runtime": "^0.10.0"
+    "vue-i18n": "^9.14.5"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.4",

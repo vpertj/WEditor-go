@@ -49,7 +49,7 @@ html[data-skin="native"],
   --footer-bg: rgba(238, 238, 243, 0.66);
   --footer-blur: blur(18px) saturate(1.7);
   --formatbar-bg: rgba(242, 242, 247, 0.62);
-  --menu-bg: rgba(248, 248, 252, 0.74);
+  --menu-bg: rgba(248, 248, 252, 0.985); /* macOS 弹出菜单为实心材质：低透明会让背后内容透字 */
   --menu-blur: blur(28px) saturate(1.9);
 
   /* 文本（macOS label 体系） */

@@ -455,3 +455,12 @@ html[data-skin="workbench"] .plat-link.active { color: var(--plat-accent); }
 /* pop-menu 出入场过渡（Transition name="dropdown" 的类在此全局定义） */
 .dropdown-enter-active, .dropdown-leave-active { transition: opacity 140ms ease, transform 140ms ease; }
 .dropdown-enter-from, .dropdown-leave-to { opacity: 0; transform: translateY(-6px) scale(0.98); }
+
+/* ---------- footer 单行硬约束（修复窄窗口下 legacy @media 竖排/换行） ---------- */
+.app-footer { flex-wrap: nowrap; min-height: 26px; }
+.footer-left { display: flex; align-items: center; gap: 14px; flex: none; white-space: nowrap; }
+.stat-item { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; line-height: 1; color: var(--text-secondary); font-weight: 400; white-space: nowrap; }
+.stat-item svg { width: 13px; height: 13px; flex: none; color: var(--text-tertiary); }
+.autosave-hint { white-space: nowrap; flex: none; margin-left: 4px; }
+.st-sw { flex: none; }
+html[data-skin="native"] .app-footer { padding-inline: 14px; }
