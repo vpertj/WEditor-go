@@ -28,7 +28,7 @@ let progressBound = false
 let startupTimer = null
 
 const isWailsEnv = () =>
-  typeof window !== 'undefined' && window.go && window.go.main && window.go.main.App
+  typeof window !== 'undefined' && !!window.mygo
 
 /** 启动后延迟多久做静默检查：不阻塞窗口出现，也避开启动瞬间的资源争用 */
 const STARTUP_CHECK_DELAY = 5000

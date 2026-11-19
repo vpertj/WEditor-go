@@ -27,6 +27,8 @@ import {
   OnFileDrop,
   OnFileDropOff
 } from '../mygo-bridge.js'
+// MyGo typed client（`mygo generate` 生成）：所有 Go binding 走它，不再用 Wails 时代的 window.go。
+import { App } from '../mygo.ts'
 
 export function useWails() {
   const isWails = ref(false)
@@ -52,7 +54,7 @@ export function useWails() {
       const env = await Environment()
       platform.value = `${env.platform}/${env.arch}`
       try {
-        const r = await window.go.main.App.getAppVersion()
+        const r = await App.getAppVersion()
         if (r && r.success && r.data && r.data.version) appVersion.value = r.data.version
       } catch (e) {
         console.warn('获取版本信息失败:', e)
@@ -75,7 +77,7 @@ export function useWails() {
 
     try {
       // MyGo binding 统一返回 MethodResult{success,message,path,content}
-      const r = await window.go.main.App.openFileDialog()
+      const r = await App.openFileDialog()
 
       if (!r || !r.success) {
         const msg = r && r.message
@@ -113,7 +115,7 @@ export function useWails() {
     if (!isWails.value) return { success: false, message: '不在 Wails 环境中' }
 
     try {
-      const r = await window.go.main.App.readFile(filePath)
+      const r = await App.readFile(filePath)
       if (!r || !r.success) return { success: false, message: (r && r.message) || '打开失败' }
       const content = r.content
       currentFilePath.value = filePath
@@ -144,7 +146,7 @@ export function useWails() {
 
     try {
       if (currentFilePath.value) {
-        const r = await window.go.main.App.saveFile(currentFilePath.value, content)
+        const r = await App.saveFile(currentFilePath.value, content)
         if (r && !r.success) throw new Error(r.message || '保存失败')
         isModified.value = false
         WindowSetTitle(`WEditor - ${currentFileName.value}`)
@@ -167,12 +169,12 @@ export function useWails() {
 
     try {
       const fileName = currentFileName.value || 'untitled.md'
-      const dlg = await window.go.main.App.saveFileDialog(fileName)
+      const dlg = await App.saveFileDialog(fileName)
       const filePath = dlg && dlg.success ? dlg.path : ''
 
       if (!filePath) return { success: false, message: '用户取消了操作' }
 
-      await window.go.main.App.saveFile(filePath, content)
+      await App.saveFile(filePath, content)
       currentFilePath.value = filePath
       currentFileName.value = filePath.split('/').pop() || filePath
       isModified.value = false
@@ -208,7 +210,7 @@ export function useWails() {
   const getRecentFiles = async () => {
     if (!isWails.value) return []
     try {
-      const r = await window.go.main.App.getRecentFiles()
+      const r = await App.getRecentFiles()
       const list = r && r.success ? r.data : []
       recentFiles.value = Array.isArray(list) ? list : []
       return recentFiles.value
@@ -221,7 +223,7 @@ export function useWails() {
   const clearRecentFiles = async () => {
     if (!isWails.value) return
     try {
-      await window.go.main.App.clearRecentFiles()
+      await App.clearRecentFiles()
       recentFiles.value = []
     } catch (e) {
       console.error('清空最近文件失败:', e)
@@ -231,7 +233,7 @@ export function useWails() {
   const openRecentFile = async (filePath) => {
     if (!isWails.value) return null
     try {
-      const r = await window.go.main.App.readFile(filePath)
+      const r = await App.readFile(filePath)
       if (!r || !r.success) return { success: false, message: (r && r.message) || '打开失败' }
       const content = r.content
       currentFilePath.value = filePath
@@ -260,7 +262,7 @@ export function useWails() {
     try {
       const name = defaultName || (currentFileName.value ?
         currentFileName.value.replace(/\.md$/i, '') + '.html' : 'export.html')
-      const r = await window.go.main.App.exportHTML(htmlContent, name)
+      const r = await App.exportHTML(htmlContent, name)
       return r && r.success ? { success: true, filePath: r.path || (r.data && r.data.filePath) } : { success: false, message: (r && r.message) || '导出失败' }
     } catch (e) {
       console.error('导出 HTML 失败:', e)

@@ -520,9 +520,7 @@ const {
   saveToDisk: async (content) => {
     // 如果当前有已打开的文件路径，自动保存到磁盘
     if (currentFilePath.value) {
-      if (window.go && window.go.main && window.go.main.App) {
-        await window.go.main.App.SaveFile(currentFilePath.value, content)
-      }
+      await App.saveFile(currentFilePath.value, content).catch((e) => console.warn('自动保存失败:', e))
     }
   },
   filePath: currentFilePath
