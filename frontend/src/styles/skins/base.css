@@ -66,8 +66,16 @@
   max-width: 320px;
   -webkit-app-region: no-drag;
   app-region: no-drag;
+  /* WKWebView 给未重置的 <button> 套原生 push-button 外观（灰底 #efefef /
+     appearance:auto），会毁掉 vibrancy toolbar 的透明层次——显式压回平面样式。 */
+  -webkit-appearance: none;
+  appearance: none;
+  border: 0;
+  font: inherit;
+  color: var(--text-primary);
+  background: transparent;
 }
-.docsw:hover { background: var(--hover-bg); }
+.docsw:hover, .docsw.open { background: var(--hover-bg); }
 .docsw .doc-icon {
   width: 18px; height: 18px; border-radius: 4px; flex: none;
   background: var(--surface-raised);
@@ -79,7 +87,7 @@
   font-size: 13px; font-weight: 590; color: var(--text-primary);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.docsw .doc-sub { font-size: 11px; color: var(--text-secondary); flex: none; }
+.docsw .doc-sub { font-size: 11px; color: var(--text-tertiary); flex: none; }
 .docsw .chev { width: 9px; height: 9px; flex: none; color: var(--text-secondary); }
 
 /* ---------- Segmented control（视图模式：分栏|源码|排版） ---------- */

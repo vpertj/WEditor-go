@@ -33,6 +33,12 @@
       <span>{{ $t('main.preview.syncScroll') }}</span>
     </span>
 
+    <!-- 自动保存指示：并入 footer（原 fixed 悬浮层会遮挡右下内容） -->
+    <span v-if="lastSavedAt" class="autosave-hint" :title="'内容有改动即自动保存'">
+      <svg viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M21,11V9H17.5V5.5H16V9H12.5V11H16V14.5H17.5V11H21M13,13V11H8A2,2 0 0,0 6,13V20A2,2 0 0,0 8,22H14A2,2 0 0,0 16,20V13M13,20H8V13H13Z"/></svg>
+      自动保存 {{ lastSavedAt }}<!-- TODO(i18n) -->
+    </span>
+
     <span class="footer-spacer"></span>
 
     <template v-if="showPlatformLinks">
@@ -58,6 +64,7 @@ defineProps({
   wordCount: { type: Number, required: true },
   estimatedReadTime: { type: Number, required: true },
   syncScrollEnabled: { type: Boolean, default: true },
+  lastSavedAt: { type: String, default: '' },
   // native：状态条展示三平台快捷切换；workbench：顶栏 CTA 已承担，关不掉旧结构也不显示
   showPlatformLinks: { type: Boolean, default: false },
   activePlatform: { type: String, default: 'wechat' }
@@ -74,5 +81,6 @@ const platforms = [
 </script>
 
 <style scoped>
+.autosave-hint { display: inline-flex; align-items: center; gap: 4px; color: var(--text-tertiary); font-size: 12px; margin-left: 6px; white-space: nowrap; }
 @import '../../styles/components/layout/app-footer.css';
 </style>

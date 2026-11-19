@@ -8,7 +8,7 @@
 
         <!-- 文档切换器：文件名 ▾（红绿灯避让 78px 起） -->
         <div class="docsw-wrap" @click.stop>
-          <button class="docsw" @click="showDocMenu = !showDocMenu" title="文档">
+          <button :class="['docsw', { open: showDocMenu }]" @click="showDocMenu = !showDocMenu" title="文档">
             <span class="doc-icon">M↓</span>
             <span class="doc-title">{{ currentFileName || '未命名草稿' }}</span>
             <span class="doc-sub" v-if="currentFileName">— Markdown</span>
@@ -307,6 +307,7 @@
             :word-count="wordCount"
             :estimated-read-time="estimatedReadTime"
             :sync-scroll-enabled="syncScrollEnabled"
+            :last-saved-at="(lastSavedAt && !isSaving) ? lastSavedAt : ''"
             :show-platform-links="false"
             :active-platform="currentPlatform"
             @toggle-sync-scroll="toggleSyncScroll"
@@ -334,10 +335,7 @@
       </div>
     </div>
 
-    <!-- 自动保存状态 -->
-    <div v-if="lastSavedAt && !isSaving" class="autosave-indicator">
-      <span>{{ isMac ? '自动保存' : '自动保存' }} {{ lastSavedAt }}</span>
-    </div>
+
 
     <!-- 通知组件 -->
     <div v-if="notifications.length > 0" class="notification-container">
@@ -1114,15 +1112,4 @@ onBeforeUnmount(() => {
   }
 }
 
-/* 自动保存状态指示器 */
-.autosave-indicator {
-  position: fixed;
-  bottom: 10px;
-  right: 10px;
-  z-index: 1001;
-  font-size: 11px;
-  color: var(--text-secondary);
-  opacity: 0.6;
-  pointer-events: none;
-}
 </style>
