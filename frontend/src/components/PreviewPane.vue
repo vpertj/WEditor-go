@@ -216,12 +216,14 @@ export default {
       platformHtmlTimer = setTimeout(async () => {
         try {
           const effectiveTheme = getCurrentTheme()
-          // 与 processMarkdown 尾部 socialFormatted 同参（isPreview=false）→ 平台排版 HTML
+          // 与复制管线同参（isPreview=false + platform）→ 预览的平台排版 HTML
+          // 与实际复制到平台的产物同源；预览容器仍各自控制 maxWidth/强调色 CSS。
           platformHtml.value = parseMarkdown(props.markdown, {
             theme: effectiveTheme,
             codeTheme: currentCodeStyle.value,
             themeSystem: currentLayoutId.value,
-            fontSettings: currentFontSettings.value
+            fontSettings: currentFontSettings.value,
+            platform: platKey.value
           })
         } catch (e) {
           console.warn('平台排版 HTML 生成失败:', e)
@@ -274,7 +276,8 @@ export default {
           theme: getCurrentTheme(),
           codeTheme: currentCodeStyle.value,
           themeSystem: currentLayoutId.value,
-          fontSettings: currentFontSettings.value
+          fontSettings: currentFontSettings.value,
+          platform: platKey.value
         })
         setTimeout(() => {
           window.dispatchEvent(new CustomEvent('weditor-skin-toast', {

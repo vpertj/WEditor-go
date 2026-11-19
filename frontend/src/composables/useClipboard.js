@@ -49,7 +49,8 @@ export function useClipboard(options = {}) {
 
   /**
    * 处理复制格式选择
-   * @param {Object} format - 选择的复制格式
+   * @param {Object} format - 选择的复制格式；format.platform 可选
+   *                         'wechat'|'xiaohongshu'|'zhihu'（缺省 wechat）
    */
   const handleCopyFormatSelect = async (format) => {
     try {
@@ -68,7 +69,8 @@ export function useClipboard(options = {}) {
         theme: getCurrentEffectiveTheme(), // 使用有效主题
         codeTheme: themeManager.currentCodeStyle.value,
         themeSystem: themeManager.currentThemeSystem.value,
-        fontSettings: themeManager.currentFontSettings.value
+        fontSettings: themeManager.currentFontSettings.value,
+        platform: format.platform // 平台维度：驱动排版差异与 toast 文案
       }
 
       // 如果没有指定格式，默认使用社交格式

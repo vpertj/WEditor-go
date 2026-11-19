@@ -328,8 +328,21 @@
     "horizontalRule": "Horizontal rule"
   },
   "copyFormat": {
-    "social": "WeChat Official Account format",
-    "markdown": "Markdown"
+    "social": "Social platform format",
+    "markdown": "Markdown",
+    "platforms": {
+      "wechat": "WeChat Official Account",
+      "xiaohongshu": "Xiaohongshu",
+      "zhihu": "Zhihu"
+    },
+    "targets": {
+      "wechat": "the WeChat editor",
+      "xiaohongshu": "the Xiaohongshu creator studio",
+      "zhihu": "the Zhihu column editor"
+    },
+    "successToast": "🎉 {platform} format copied! You can paste it into {target}",
+    "failedRetry": "❌ Copy failed, please try again",
+    "emptyContent": "Please edit some content first"
   },
   "update": {
     "checking": "Checking for updates…",

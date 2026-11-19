@@ -46,7 +46,7 @@
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"><circle cx="6.2" cy="6.2" r="4.1"/><path d="m9.4 9.4 3 3"/></svg>
           </button>
           <div class="export-split-wrap" @click.stop>
-            <button class="tb filled" style="padding: 0 9px; gap: 6px;" :disabled="!hasContent" @click="handleCopyFormatSelect(selectedCopyFormat || { value: 'social' })">
+            <button class="tb filled" style="padding: 0 9px; gap: 6px;" :disabled="!hasContent" @click="handleCopyFormatSelect({ ...(selectedCopyFormat || { value: 'social' }), platform: currentPlatform })">
               <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"><rect x="4.4" y="4.4" width="7.2" height="7.2" rx="1.6"/><path d="M9.4 2.2a1.6 1.6 0 0 0-1.2-.6H3.2A1.6 1.6 0 0 0 1.6 3.2v5c0 .47.2.9.6 1.2"/></svg>
               <span style="font-weight:550">导出</span><!-- TODO(i18n) -->
             </button>
@@ -57,9 +57,9 @@
             <Transition name="dropdown">
               <div v-if="showExportMenu" class="pop-menu pop-menu-right">
                 <div class="mi-head">复制为富文本</div><!-- TODO(i18n) -->
-                <div class="mi" @click="pickPlatformAndCopy('wechat'); showExportMenu=false"><span class="tick">✓</span>公众号<span class="sc">⌘1</span></div>
-                <div class="mi" @click="pickPlatformAndCopy('xiaohongshu'); showExportMenu=false"><span class="tick"></span>小红书<span class="sc">⌘2</span></div>
-                <div class="mi" @click="pickPlatformAndCopy('zhihu'); showExportMenu=false"><span class="tick"></span>知乎<span class="sc">⌘3</span></div>
+                <div class="mi" @click="pickPlatformAndCopy('wechat'); showExportMenu=false"><span class="tick">{{ currentPlatform === 'wechat' ? '✓' : '' }}</span>公众号<span class="sc">⌘1</span></div>
+                <div class="mi" @click="pickPlatformAndCopy('xiaohongshu'); showExportMenu=false"><span class="tick">{{ currentPlatform === 'xiaohongshu' ? '✓' : '' }}</span>小红书<span class="sc">⌘2</span></div>
+                <div class="mi" @click="pickPlatformAndCopy('zhihu'); showExportMenu=false"><span class="tick">{{ currentPlatform === 'zhihu' ? '✓' : '' }}</span>知乎<span class="sc">⌘3</span></div>
                 <div class="csep"></div>
                 <div class="mi" @click="onExportHTMLClick(); showExportMenu=false">导出 HTML…<span class="sc">⌘⇧E</span></div>
                 <div class="mi" @click="triggerImportMd(); showExportMenu=false">导入 .md…<span class="sc">⌘O</span></div>
@@ -190,7 +190,7 @@
           <Transition name="dropdown">
             <div v-if="showExportMenu" class="pop-menu pop-menu-right" style="top: calc(var(--skin-toolbar-h) + 4px);">
               <div class="mi-head">目标平台</div><!-- TODO(i18n) -->
-              <div v-for="(p, i) in PLATFORM_OPTIONS" :key="p.value" class="mi" @click="wbPlatformRequest = p.value; showExportMenu=false">
+              <div v-for="(p, i) in PLATFORM_OPTIONS" :key="p.value" class="mi" @click="pickPlatformAndCopy(p.value); showExportMenu=false">
                 <span class="tick">{{ currentPlatform === p.value ? '✓' : '' }}</span>{{ p.label }}<span class="sc">{{ p.shortcut }}</span>
               </div>
               <div class="csep"></div>
@@ -904,12 +904,31 @@ window.addEventListener('pointerdown', onDocPointerDown, true)
 onBeforeUnmount(() => window.removeEventListener('pointerdown', onDocPointerDown, true))
 
 // native 导出 split：选平台 → 经 AppMain 下发给 PreviewPane（版心/强调色跟随），
-// 再走现有 selectedCopyFormat→handleCopyFormatSelect 复制路径（机制不动）。
+// 再把 platform 一路传进 handleCopyFormatSelect → copySocialFormat
+// （此前复制管线无平台维度，三平台产物与 toast 完全相同）。
 const pickPlatformAndCopy = (p) => {
   wbPlatformRequest.value = p
+  currentPlatform.value = p
   nextTick(() => {
-    handleCopyFormatSelect(selectedCopyFormat.value || { value: 'social' })
+    handleCopyFormatSelect({ value: 'social', platform: p })
   })
+}
+
+// 顶栏主"导出"CTA / workbench"复制排版"：按当前激活平台复制。
+// workbench 皮肤下优先点 PreviewPane 的平台复制按钮（其内部持有 platKey）；
+// 找不到时回落 App 层路径，并带上 currentPlatform。
+const copyCurrentPlatformFormat = () => {
+  const btn = document.querySelector('.pp-plat-copy')
+  if (btn) {
+    btn.click()
+    return
+  }
+  if (!hasContent.value) {
+    showNotification('请先编辑内容', 'warning') // TODO(i18n)
+    return
+  }
+  const format = selectedCopyFormat.value || { value: 'social' }
+  handleCopyFormatSelect({ ...format, platform: currentPlatform.value })
 }
 
 // workbench tab 关闭：仅活动"未命名草稿"可关（等价新建）；已存盘文件关闭回到空态
@@ -932,13 +951,6 @@ const onExportHTMLClick = async () => {
   }
 }
 
-// ⌘⇧C 复制当前平台排版：直接触发 PreviewPane 的平台复制按钮
-const copyCurrentPlatformFormat = () => {
-  const btn = document.querySelector('.pp-plat-copy')
-  if (btn) btn.click()
-  else showNotification('预览尚未就绪', 'warning') // TODO(i18n)
-}
-
 // 键盘快捷键（workbench 设计稿承诺的 ⌘1/⌘2/⌘3 平台切换、⌥S 同步滚动；
 // 全局监听仅 workbench 皮肤启用，避免影响 native 既有行为）
 const onGlobalKeydown = (e) => {
@@ -959,8 +971,9 @@ const onGlobalKeydown = (e) => {
     const idx = ['1', '2', '3'].indexOf(e.key)
     if (idx >= 0) {
       e.preventDefault()
-      // 经 AppMain 中转到 PreviewPane（tab DOM 可能因 v-if 重建不存在）
-      wbPlatformRequest.value = PLATFORM_OPTIONS[idx].value
+      // ⌘1/2/3：切平台并复制（设计稿承诺"选平台即出该平台的稿"；
+      // wbPlatformRequest 经 AppMain 中转到 PreviewPane，tab DOM 可能因 v-if 重建不存在）
+      pickPlatformAndCopy(PLATFORM_OPTIONS[idx].value)
     }
   }
 }

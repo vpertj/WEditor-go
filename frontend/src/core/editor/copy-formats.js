@@ -8,7 +8,21 @@
  */
 
 import { parseMarkdown } from '../markdown/parser/index.js';
+import { getPlatformProfile } from '../markdown/platform/profiles.js';
 import { copyToSocialClean } from './clipboard.js';
+import { i18n } from '../../plugins/i18n.js';
+
+/** i18n 翻译（i18n 未就绪时回落 fallback / key） */
+const $t = (key, named, fallback) => {
+  try {
+    const g = i18n && i18n.global
+    if (g && typeof g.t === 'function') {
+      const v = named ? g.t(key, named) : g.t(key)
+      if (v && v !== key) return v
+    }
+  } catch (_) {}
+  return fallback != null ? fallback : key
+}
 // mermaid 按需动态加载（仅在复制内容含 .mermaid 块时引入），不阻塞应用启动
 
 /**
@@ -299,10 +313,10 @@ async function rasterizeMermaidSvgs(container, scale = 2) {
 }
 
 /**
- * 生成公众号格式HTML（带内联样式）
+ * 生成目标平台格式HTML（带内联样式）
  * @param {string} markdownText - Markdown文本
- * @param {Object} options - 解析选项
- * @returns {string} 公众号格式HTML
+ * @param {Object} options - 解析选项（含 options.platform: wechat|xiaohongshu|zhihu）
+ * @returns {string} 平台格式HTML
  */
 function generateSocialHtml(markdownText, options = {}) {
   // 使用非预览模式生成HTML，这样会包含内联样式
@@ -342,18 +356,21 @@ async function copyTextToClipboard(text) {
 }
 
 /**
- * 复制公众号格式
+ * 复制社交平台格式（公众号/小红书/知乎，由 options.platform 决定）
  * @param {string} markdownText - Markdown文本
- * @param {Object} options - 解析选项
+ * @param {Object} options - 解析选项；options.platform 缺省 'wechat'
  * @returns {Promise<{success: boolean, message: string}>}
  */
 export async function copySocialFormat(markdownText, options = {}) {
   if (!markdownText.trim()) {
     return {
       success: false,
-      message: '请先编辑内容'
+      message: $t('copyFormat.emptyContent', null, '请先编辑内容')
     };
   }
+
+  // 平台档案：驱动 HTML 差异化 + toast 文案（此前硬编码"公众号"）
+  const profile = getPlatformProfile(options.platform);
 
   try {
     // 1) 先生成社交版 HTML（含 mermaid 容器）
@@ -388,9 +405,15 @@ export async function copySocialFormat(markdownText, options = {}) {
 
     const success = await copyToSocialClean(finalHtml, options.fontSettings);
 
+    // toast 平台名/目标名走 i18n（zh: {label}/{copyTargetName}；en: {platform}/{target}）
+    const platformLabel = $t(`copyFormat.platforms.${profile.key}`, null, profile.label);
+    const targetName = $t(`copyFormat.targets.${profile.key}`, null, profile.copyTargetName);
+    const okMessage = $t('copyFormat.successToast', { platform: platformLabel, target: targetName },
+      `🎉 ${platformLabel}格式已复制！可以粘贴到${targetName}`);
+
     return {
       success,
-      message: success ? '🎉 公众号格式已复制！可以粘贴到社交平台编辑器' : '❌ 复制失败，请重试'
+      message: success ? okMessage : $t('copyFormat.failedRetry', null, '❌ 复制失败，请重试')
     };
   } catch (error) {
     return {
@@ -432,8 +455,6 @@ export async function copyMarkdownFormat(markdownText) {
  * 获取所有可用的复制格式选项
  * @returns {Array} 格式选项数组
  */
-import { i18n } from '../../plugins/i18n.js';
-
 export function getCopyFormatOptions() {
   const t = (key) => (i18n && i18n.global && i18n.global.t ? i18n.global.t(key) : key)
   return [

@@ -329,7 +329,20 @@
   },
   "copyFormat": {
     "social": "公众号格式",
-    "markdown": "MD 格式"
+    "markdown": "MD 格式",
+    "platforms": {
+      "wechat": "公众号",
+      "xiaohongshu": "小红书",
+      "zhihu": "知乎"
+    },
+    "targets": {
+      "wechat": "公众号编辑器",
+      "xiaohongshu": "小红书创作界面",
+      "zhihu": "知乎专栏编辑器"
+    },
+    "successToast": "🎉 {platform}格式已复制！可以粘贴到{target}",
+    "failedRetry": "❌ 复制失败，请重试",
+    "emptyContent": "请先编辑内容"
   },
   "update": {
     "checking": "正在检查更新…",
